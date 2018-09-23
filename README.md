@@ -1,6 +1,6 @@
 # GLPT :: OpenGL Pascal Toolkit
 
-A simple toolkit that allows to create and manage native OpenGL contexts in a platform independent way.
+An easy to use native pascal toolkit that allows to create and manage OpenGL contexts in a platform independent way.
 
 ![alt text](https://github.com/daar/GLPT/blob/master/image/simple.png "GLPT in action")
 
