@@ -12,12 +12,12 @@ Using GLPT is easy, you only need to include the GLPT unit and create a window. 
   
       ...
 
-      GLPT_Init
+      GLPT_Init;
       window := GLPT_CreateWindow(0, 0, width, height, 'Simple example');
 
       while not GLPT_WindowShouldClose(window) do
       begin
-        //do your OpenGL magic here
+        //do your application and OpenGL magic here
 
         GLPT_SwapBuffers(window);
         GLPT_PollEvents;
