@@ -1,0 +1,4 @@
+add_executable('GLPT_test', 'simple', 'simple.pp', ['lib_GLPT']);
+add_executable('GLPT_test', 'gears', 'gears.pp', ['lib_GLPT']);
+add_executable('GLPT_test', 'two_windows', 'two_windows.pp', ['lib_GLPT']);
+add_executable('GLPT_test', 'window2D', 'window2D.pp', ['lib_GLPT']);

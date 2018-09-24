@@ -1,0 +1,8 @@
+project('GLPT');
+
+add_library('lib_GLPT', 
+[
+  'GLPT.pas'
+], []);
+
+add_subdirectory('examples');

@@ -193,7 +193,7 @@ var
       GLPT_SetWindowShouldClose(win, True);
   end;
 
-  procedure error_callback(error: integer; const description: string);
+  procedure error_callback(const error: integer; const description: string);
   begin
     writeln(stderr, description);
   end;
