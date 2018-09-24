@@ -1,3 +1,8 @@
+function Cocoa_GetTime: double;
+begin
+  {$note implement this}
+end;
+
 function Cocoa_Terminate: boolean;
 begin
   {$note implement this}

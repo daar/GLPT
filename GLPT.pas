@@ -28,16 +28,14 @@ interface
 
 uses
 {$IFDEF MSWINDOWS}
-  Windows,
+  Windows;
 {$ENDIF}
 {$IFDEF LINUX}
-  X, Xlib, xutil, GLX,
+  Linux, UnixType, X, Xlib, xutil, GLX;
 {$ENDIF}
 {$IFDEF DARWIN}
 
 {$ENDIF}
-  Classes,
-  GL;
 
 const
   //mouse buttons.
@@ -286,10 +284,21 @@ const
   GLPT_KEY_OEM_CLEAR = 254;
 
 type
+  { Types used by standard events }
+  TShiftStateEnum = (ssShift, ssAlt, ssCtrl,
+    ssLeft, ssRight, ssMiddle, ssDouble,
+    // Extra additions
+    ssMeta, ssSuper, ssHyper, ssAltGr, ssCaps, ssNum,
+    ssScroll, ssTriple, ssQuad, ssExtra1, ssExtra2);
+
+{$packset 1}
+  TShiftState = set of TShiftStateEnum;
+{$packset default}
+
   pGLPT_MessageRec = ^GLPT_MessageRec;
 
   GLPT_EventCallback = procedure(msg: pGLPT_MessageRec);
-  GLPT_ErrorCallback = procedure(error: integer; const description: string);
+  GLPT_ErrorCallback = procedure(const error: integer; const description: string);
 
   pGLPTwindow = ^GLPTwindow;
 
@@ -335,9 +344,9 @@ type
   end;
 
   GLPT_MsgParmUser = record
-    param1: integer;   //< custom message 1
-    param2: integer;   //< custom message 4
-    param3: integer;   //< custom message 3
+    param1: pointer;   //< custom message 1
+    param2: pointer;   //< custom message 2
+    param3: pointer;   //< custom message 3
   end;
 
   GLPT_MsgParmRect = record
@@ -361,36 +370,55 @@ type
     prev: pGLPT_MessageRec;       //< previous item in the list
 
     win: pGLPTwindow;             //< GLPT window that has sent message
-    mcode: integer;              //< message code
+    mcode: integer;               //< message code
     params: GLPT_MessageParams;   //< event data
   end;
 
   GLPTRect = record
-    left: longint;
-    top: longint;
-    right: longint;
-    bottom: longint;
+    left: longint;     //< left position of rectangle
+    top: longint;      //< top position of rectangle
+    right: longint;    //< right position of rectangle
+    bottom: longint;   //< bottom position of rectangle
   end;
 
 {
+   This function returns the value of the time elapsed since GLPT was initialized.
+   @return the time in seconds
+}
+function GLPT_GetTime: double;
+
+{
    Initializes the GLPT library
-   @return True is successfull otherwise False
+   @return True if successfull otherwise False
 }
 function GLPT_Init: boolean;
 
 {
    Terminates the GLPT library
+   @return True if successfull otherwise False
 }
 function GLPT_Terminate: boolean;
 
+{
+   This function checks if the internal state variable
+   @param win: the window that should be checked
+   @return the value of the internal state variable
+}
 function GLPT_WindowShouldClose(win: pGLPTwindow): boolean;
 
-procedure GLPT_SetWindowShouldClose(win: pGLPTwindow; value: boolean);
+{
+   This procedure terminates the main event loop
+   @param win: the window that should be closed
+   @param Value: the value that should be given to the internal state variable
+}
+procedure GLPT_SetWindowShouldClose(win: pGLPTwindow; Value: boolean);
 
 {
    Creates a window and its associated context.
-   @param Width: the width of the window
-   @param Height: the height of the window
+   @param posx: the x position of the window
+   @param posy: the y position of the window
+   @param sizex: the width of the window
+   @param sizey: the height of the window
    @param title: the title of the window
    @return a reference to the created window
 }
@@ -402,6 +430,11 @@ function GLPT_CreateWindow(posx, posy, sizex, sizey: integer; title: PChar): pGL
 }
 procedure GLPT_DestroyWindow(win: pGLPTwindow);
 
+{
+   Make the window active
+   @param win: the window that should be made active
+   @return True if successfull otherwise False
+}
 function GLPT_MakeCurrent(win: pGLPTwindow): boolean;
 
 {
@@ -425,20 +458,25 @@ procedure GLPT_GetFrameBufferSize(win: pGLPTwindow; out width, height: integer);
 procedure GLPT_SetErrorCallback(errorCallback: GLPT_ErrorCallback);
 
 {
-   This is the procedure will poll for any pending events and put them in
+   This procedure will poll for any pending events and put them in
    the eventlist. Next the eventlist is checked and if needed the event
    callback function is called.
 }
 procedure GLPT_PollEvents;
 
+{
+   Set the cursor to a predefined one
+   @param cursor: the index of the cursor
+}
 procedure GLPT_SetCursor(cursor: byte);
 
+{
+   Retrieve the display coordinate size
+   @param dr: the variable holding the display coordinates
+}
 procedure GLPT_GetDisplayCoords(var dr: GLPTRect);
 
 implementation
-
-uses
-  SysUtils;
 
 const
   GLPT_PLATFORM_ERROR = 1;
@@ -462,15 +500,17 @@ var
   errfunc: GLPT_ErrorCallback = nil;
   windowlist: ListBase;
 
+  inittime: double = 0;
+
 //***  Error handling  *************************************************************************************************
 
-procedure glptError(error: integer; const fmt: string; const args: array of const);
+procedure glptError(error: integer; const msg: string);
 begin
   if assigned(errfunc) then
     case error of
-      GLPT_PLATFORM_ERROR: errfunc(error, format('GLPT_PLATFORM_ERROR : ' + fmt, args));
-    else
-      errfunc(error, format('GLPT_UNKNOWN_ERROR : ' + fmt, args));
+      GLPT_PLATFORM_ERROR: errfunc(error, 'GLPT_PLATFORM_ERROR : ' + msg);
+      else
+        errfunc(error, 'GLPT_UNKNOWN_ERROR : ' + msg);
     end;
 end;
 
@@ -560,8 +600,23 @@ end;
 
 //***  API functions  **************************************************************************************************
 
+function GLPT_GetTime: double;
+begin
+{$IFDEF MSWINDOWS}
+  exit(gdi_GetTime - inittime);
+{$ENDIF}
+{$IFDEF LINUX}
+  exit(X11_GetTime - inittime);
+{$ENDIF}
+{$IFDEF DARWIN}
+  exit(Cocoa_GetTime - inittime);
+{$ENDIF}
+end;
+
 function GLPT_Init: boolean;
 begin
+  inittime := GLPT_GetTime;
+
 {$IFDEF MSWINDOWS}
   exit(gdi_Init);
 {$ENDIF}

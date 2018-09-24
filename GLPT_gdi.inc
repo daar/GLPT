@@ -2,11 +2,16 @@ var
   wc: Windows.TWNDCLASS;
   h_Instance: HINST;
 
+function gdi_GetTime: double;
+begin
+  exit(GetTickCount / 1000);
+end;
+
 function gdi_Terminate: boolean;
 begin
   if (not Windows.UnregisterClass('GLPT class', h_Instance)) then
     begin
-      glptError(GLPT_PLATFORM_ERROR, 'could not unregister class', []);
+      glptError(GLPT_PLATFORM_ERROR, 'could not unregister class');
       exit(False);
     end;
 
@@ -25,24 +30,24 @@ begin
   if win^.h_RC <> 0 then
     begin
       if (not wglMakeCurrent(win^.h_DC,0)) then
-        glptError(GLPT_PLATFORM_ERROR, 'release of DC and RC failed', []);
+        glptError(GLPT_PLATFORM_ERROR, 'release of DC and RC failed');
 
       if (not wglDeleteContext(win^.h_RC)) then
         begin
-          glptError(GLPT_PLATFORM_ERROR, 'release of Rendering Context failed', []);
+          glptError(GLPT_PLATFORM_ERROR, 'release of Rendering Context failed');
           win^.h_RC := 0;
         end;
     end;
 
   if (win^.h_DC = 1) and (releaseDC(win^.h_Wnd, win^.h_DC) <> 0) then
     begin
-      glptError(GLPT_PLATFORM_ERROR, 'release of Device Context failed', []);
+      glptError(GLPT_PLATFORM_ERROR, 'release of Device Context failed');
       win^.h_DC := 0;
     end;
 
   if (win^.h_Wnd <> 0) and (not destroywindow(win^.h_Wnd)) then
     begin
-      glptError(GLPT_PLATFORM_ERROR, 'could not release hWnd', []);
+      glptError(GLPT_PLATFORM_ERROR, 'could not release hWnd');
       win^.h_Wnd := 0;
     end;
 end;
@@ -51,7 +56,7 @@ function gdi_CreateWindow(win: pGLPTwindow; posx, posy, sizex, sizey: integer; t
 const
   bits = 16;
 var
-  Pixelformat: GLuint;
+  Pixelformat: longint;
   dwExStyle: dword;
   dwStyle: dword;
   pfd: pixelformatdescriptor;
@@ -77,7 +82,7 @@ begin
 
       if (ChangeDisplaySettings(dmScreenSettings, CDS_FULLSCREEN)) <> DISP_CHANGE_SUCCESSFUL then
         begin
-          glptError(GLPT_PLATFORM_ERROR, 'fullscreen mode is not supported, switching to windowed mode instead', []);
+          glptError(GLPT_PLATFORM_ERROR, 'fullscreen mode is not supported, switching to windowed mode instead');
           win^.fscreen := False;
         end;
     end;
@@ -110,7 +115,7 @@ begin
   if win^.h_Wnd = 0 then
     begin
       gdi_DestroyWindow(win);
-      glptError(GLPT_PLATFORM_ERROR, 'window creation error', []);
+      glptError(GLPT_PLATFORM_ERROR, 'window creation error');
       exit(False);
     end;
 
@@ -147,7 +152,7 @@ begin
   if win^.h_DC = 0 then
     begin
       gdi_DestroyWindow(win);
-      glptError(GLPT_PLATFORM_ERROR, 'can''t create a GL device context', []);
+      glptError(GLPT_PLATFORM_ERROR, 'can''t create a GL device context');
       exit(False);
     end;
 
@@ -155,14 +160,14 @@ begin
   if PixelFormat = 0 then
     begin
       gdi_DestroyWindow(win);
-      glptError(GLPT_PLATFORM_ERROR, 'can''t find a suitable PixelFormat', []);
+      glptError(GLPT_PLATFORM_ERROR, 'can''t find a suitable PixelFormat');
       exit(False);
     end;
 
   if not SetPixelFormat(win^.h_DC, PixelFormat, @pfd) then
     begin
       gdi_DestroyWindow(win);
-      glptError(GLPT_PLATFORM_ERROR, 'can''t set PixelFormat', []);
+      glptError(GLPT_PLATFORM_ERROR, 'can''t set PixelFormat');
       exit(False);
     end;
 
@@ -170,14 +175,14 @@ begin
   if win^.h_RC = 0 then
     begin
       gdi_DestroyWindow(win);
-      glptError(GLPT_PLATFORM_ERROR, 'can''t create a GL rendering context', []);
+      glptError(GLPT_PLATFORM_ERROR, 'can''t create a GL rendering context');
       exit(False);
     end;
 
   if not wglMakeCurrent(win^.h_DC, win^.h_RC) then
     begin
       gdi_DestroyWindow(win);
-      glptError(GLPT_PLATFORM_ERROR, 'can''t activate the GL rendering context', []);
+      glptError(GLPT_PLATFORM_ERROR, 'can''t activate the GL rendering context');
       exit(False);
     end;
 
@@ -298,7 +303,7 @@ begin
                       params.mouse.x := x;
                       params.mouse.y := y;
                       params.mouse.shiftstate := gdi_GetKeyboardShiftState;
-                      params.mouse.timestamp := Now;
+                      params.mouse.timestamp := gdi_GetTime;
 
                       case message of
                         WM_LBUTTONUP,
@@ -329,7 +334,7 @@ begin
                     params.mouse.x := x;
                     params.mouse.y := y;
                     params.mouse.shiftstate := gdi_GetKeyboardShiftState;
-                    params.mouse.timestamp := Now;
+                    params.mouse.timestamp := gdi_GetTime;
 
                     glptPostMessage(win, GLPT_MESSAGE_MOUSEMOVE, params);
                   end;
@@ -393,13 +398,13 @@ begin
     begin
       case GetLastError of
         ERROR_CLASS_ALREADY_EXISTS:
-          glptError(GLPT_PLATFORM_ERROR, 'class already exists', []);
+          glptError(GLPT_PLATFORM_ERROR, 'class already exists');
         ERROR_CLASS_DOES_NOT_EXIST:
-          glptError(GLPT_PLATFORM_ERROR, 'class does not exists', []);
+          glptError(GLPT_PLATFORM_ERROR, 'class does not exists');
         ERROR_CLASS_HAS_WINDOWS:
-          glptError(GLPT_PLATFORM_ERROR, 'class has windows', []);
+          glptError(GLPT_PLATFORM_ERROR, 'class has windows');
       else
-        glptError(GLPT_PLATFORM_ERROR, 'unknown class error', []);
+        glptError(GLPT_PLATFORM_ERROR, 'unknown class error');
       end;
 
       exit(False);

@@ -1,3 +1,13 @@
+function X11_GetTime: double;
+var
+  now: timespec;
+begin
+  if clock_gettime(CLOCK_MONOTONIC, @now) <> 0 then
+    exit(0);
+
+  exit(now.tv_sec + now.tv_nsec / 1000000000);
+end;
+
 (*
  * Create an RGB, double-buffered window.
  * Return the window and context handles.
@@ -17,7 +27,7 @@ begin
   win^.dpy := XOpenDisplay(nil);
   if win^.dpy = nil then
     begin
-      glptError(GLPT_PLATFORM_ERROR, 'could not open display %s', [title]);
+      glptError(GLPT_PLATFORM_ERROR, 'could not open display ' + title);
       exit(False);
     end;
 
@@ -27,7 +37,7 @@ begin
   visinfo := glXChooseVisual(win^.dpy, scrnum, attribs);
   if visinfo = nil then
     begin
-      glptError(GLPT_PLATFORM_ERROR, 'could not get an RGB, double-buffered visual', []);
+      glptError(GLPT_PLATFORM_ERROR, 'could not get an RGB, double-buffered visual');
       exit(False);
     end;
 
@@ -66,7 +76,7 @@ begin
 
   if win^.ctx = nil then
     begin
-      glptError(GLPT_PLATFORM_ERROR, 'glXCreateContext failed', []);
+      glptError(GLPT_PLATFORM_ERROR, 'glXCreateContext failed');
       exit(False);
     end;
 
@@ -161,7 +171,7 @@ begin
                          params.mouse.x := event.xbutton.x;
                          params.mouse.y := event.xbutton.y;
                          //params.mouse.shiftstate := X11_GetKeyboardShiftState;
-                         params.mouse.timestamp := Now;
+                         params.mouse.timestamp := X11_GetTime;
 
                          case event.xbutton.button of 
                            Button1: params.mouse.Buttons := GLPT_MOUSE_BUTTON_LEFT;

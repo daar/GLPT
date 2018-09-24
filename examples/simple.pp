@@ -18,24 +18,24 @@ var
   procedure write_FPS;
   var
     currentTime: double;
-    title: string;
+    fps: string;
   begin
     // measure FPS
-    currentTime := Now * 24 * 3600;
+    currentTime := GLPT_GetTime;
     inc(nbFrames);
 
     if currentTime - lastTime >= 1 then
     begin
-      title := format('[FPS: %3.0f]', [nbFrames / (currentTime - lastTime)]);
+      fps := format('[FPS: %3.0f]', [nbFrames / (currentTime - lastTime)]);
 
-      writeln(title);
+      writeln(GLPT_GetTime:0:3, ' ', fps);
 
       nbFrames := 0;
-      lastTime := Now * 24 * 3600;
+      lastTime := GLPT_GetTime;
     end;
   end;
 
-  procedure error_callback(error: integer; const description: string);
+  procedure error_callback(const error: integer; const description: string);
   begin
     writeln(stderr, description);
   end;
@@ -89,7 +89,7 @@ begin
     glMatrixMode(GL_MODELVIEW);
 
     glLoadIdentity;
-    rotate := (Now * 24 * 3600 * 50);
+    rotate := (GLPT_GetTime * 50);
     rotate := rotate - int(rotate / 360) * 360;
     glRotatef(rotate, 0, 0, 1);
 
