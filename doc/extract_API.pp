@@ -24,7 +24,7 @@ var
 
   function asIcon(status: string): string;
   begin
-    case api_list[j].linux of
+    case status of
       'Working': Result :=
           '<img src="https://github.com/daar/GLPT/blob/master/doc/green.svg">';
       'Not implemented': Result :=
