@@ -27,10 +27,22 @@ Using GLPT is easy, you only need to include the GLPT unit and create a window. 
 
 ## Support
 
-| Operating system | Native API   | GLPT Status     |
-|------------------|--------------|-----------------|
-| MS Windows       | GDI          | Complete        |
-| Linux            | X11          | Almost complete |
-| Mac OSX          | Cocoa        | Missing         |
+| API                       | Linux (X11)     | Mac OSX (Cocoa) | Windows (GDI)   |
+|---------------------------|-----------------|-----------------|-----------------|
+|         GLPT_CreateWindow | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+|        GLPT_DestroyWindow | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+|     GLPT_GetDisplayCoords | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+|   GLPT_GetFrameBufferSize | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+|         GLPT_GetLastError | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+|              GLPT_GetTime | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+|                 GLPT_Init | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+|          GLPT_MakeCurrent | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+|           GLPT_PollEvents | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+|            GLPT_SetCursor | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> |
+|     GLPT_SetErrorCallback | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+| GLPT_SetWindowShouldClose | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+|          GLPT_SwapBuffers | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+|            GLPT_Terminate | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
+|    GLPT_WindowShouldClose | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/red.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
 
 > For Mac OSX only placeholder code is available, without access to a Mac this will probably remain so. Pull requests will be handled with priority.
