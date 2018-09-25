@@ -382,6 +382,13 @@ type
   end;
 
 {
+   This function returns the last occurred error message. Please note that also the error callback function returns the
+   same error message.
+   @return the error string
+}
+function GLPT_GetLastError: string;
+
+{
    This function returns the value of the time elapsed since GLPT was initialized.
    @return the time in seconds
 }
@@ -479,7 +486,9 @@ procedure GLPT_GetDisplayCoords(var dr: GLPTRect);
 implementation
 
 const
-  GLPT_PLATFORM_ERROR = 1;
+  GLPT_ERROR_NONE = 1;
+  GLPT_ERROR_PLATFORM = 2;
+  GLPT_ERROR_UNKNOWN = 255;
 
 type
   pLink = ^Link;
@@ -494,6 +503,11 @@ type
     last: pLink;
   end;
 
+  GLPT_error = record
+    error: integer;
+    msg: string;
+  end;
+
 var
   msglist: ListBase;
 
@@ -501,17 +515,28 @@ var
   windowlist: ListBase;
 
   inittime: double = 0;
+  lasterr: GLPT_error;
 
 //***  Error handling  *************************************************************************************************
 
-procedure glptError(error: integer; const msg: string);
+procedure glptError(const error: integer; const msg: string);
+var
+  errmsg: string;
 begin
+  case error of
+    GLPT_ERROR_NONE: errmsg := 'GLPT_ERROR_PLATFORM : ' + msg;
+    GLPT_ERROR_PLATFORM: errmsg := 'GLPT_ERROR_PLATFORM : ' + msg;
+    GLPT_ERROR_UNKNOWN: errmsg := 'GLPT_ERROR_UNKNOWN : ' + msg;
+    else
+      errmsg := 'GLPT_ERROR_UNKNOWN : ' + msg;
+  end;
+
+  //store the last error
+  lasterr.error := error;
+  lasterr.msg := msg;
+
   if assigned(errfunc) then
-    case error of
-      GLPT_PLATFORM_ERROR: errfunc(error, 'GLPT_PLATFORM_ERROR : ' + msg);
-      else
-        errfunc(error, 'GLPT_UNKNOWN_ERROR : ' + msg);
-    end;
+    errfunc(error, errmsg);
 end;
 
 //***  Memory handling  ************************************************************************************************
@@ -600,6 +625,11 @@ end;
 
 //***  API functions  **************************************************************************************************
 
+function GLPT_GetLastError: string;
+begin
+  exit(lasterr.msg);
+end;
+
 function GLPT_GetTime: double;
 begin
 {$IFDEF MSWINDOWS}
@@ -615,6 +645,10 @@ end;
 
 function GLPT_Init: boolean;
 begin
+  //reset the last error
+  lasterr.error := GLPT_ERROR_NONE;
+  lasterr.msg := '';
+
   inittime := GLPT_GetTime;
 
 {$IFDEF MSWINDOWS}

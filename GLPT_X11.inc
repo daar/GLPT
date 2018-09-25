@@ -27,7 +27,7 @@ begin
   win^.dpy := XOpenDisplay(nil);
   if win^.dpy = nil then
     begin
-      glptError(GLPT_PLATFORM_ERROR, 'could not open display ' + title);
+      glptError(GLPT_ERROR_PLATFORM, 'could not open display ' + title);
       exit(False);
     end;
 
@@ -37,7 +37,7 @@ begin
   visinfo := glXChooseVisual(win^.dpy, scrnum, attribs);
   if visinfo = nil then
     begin
-      glptError(GLPT_PLATFORM_ERROR, 'could not get an RGB, double-buffered visual');
+      glptError(GLPT_ERROR_PLATFORM, 'could not get an RGB, double-buffered visual');
       exit(False);
     end;
 
@@ -76,7 +76,7 @@ begin
 
   if win^.ctx = nil then
     begin
-      glptError(GLPT_PLATFORM_ERROR, 'glXCreateContext failed');
+      glptError(GLPT_ERROR_PLATFORM, 'glXCreateContext failed');
       exit(False);
     end;
 
