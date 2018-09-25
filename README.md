@@ -27,10 +27,10 @@ Using GLPT is easy, you only need to include the GLPT unit and create a window. 
 
 ## Support
 
-| Operating system | API   | Status           |
-|------------------|-------|------------------|
-| MS Windows       | GDI   | Complete         |
-| Linux            | X11   | Almost complete  |
-| Mac OSX          | Cocoa | Missing          |
+| Operating system | Native API   | GLPT Status     |
+|------------------|--------------|-----------------|
+| MS Windows       | GDI          | Complete        |
+| Linux            | X11          | Almost complete |
+| Mac OSX          | Cocoa        | Missing         |
 
 > For Mac OSX only placeholder code is available, without access to a Mac this will probably remain so. Pull requests will be handled with priority.
