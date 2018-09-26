@@ -10,3 +10,6 @@ add_executable('GLPT_examples', 'gears', 'gears.pp', ['lib_GLPT']);
 add_executable('GLPT_examples', 'simple', 'simple.pp', ['lib_GLPT']);
 add_executable('GLPT_examples', 'two_windows', 'two_windows.pp', ['lib_GLPT']);
 add_executable('GLPT_examples', 'window2d', 'window2D.pp', ['lib_GLPT']);
+
+add_library('lib_imgui', ['uglyfont.pas'], []);
+add_executable('GLPT_examples', 'imgui', 'imgui.pp', ['lib_GLPT', 'lib_imgui']);

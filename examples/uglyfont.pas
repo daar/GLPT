@@ -12,6 +12,8 @@
 // Soji Yamakawa
 unit uglyfont;
 
+{$mode objfpc}
+
 interface
 
 uses
