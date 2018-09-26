@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/daar/GLPT.svg?branch=master)](https://travis-ci.org/daar/GLPT)
+
 # GLPT :: OpenGL Pascal Toolkit
 
 An easy to use native pascal toolkit that allows to create and manage OpenGL contexts in a platform independent way.
