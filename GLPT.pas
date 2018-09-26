@@ -26,16 +26,18 @@ unit GLPT;
 
 interface
 
+{$IFNDEF DARWIN}
 uses
+{$ENDIF}
 {$IFDEF MSWINDOWS}
   Windows;
 {$ENDIF}
 {$IFDEF LINUX}
   Linux, UnixType, X, Xlib, xutil, GLX;
 {$ENDIF}
-{ $IFDEF DARWIN}
+{$IFDEF DARWIN}
 
-{ $ENDIF}
+{$ENDIF}
 
 const
   //mouse buttons.
