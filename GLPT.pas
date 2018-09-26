@@ -33,9 +33,9 @@ uses
 {$IFDEF LINUX}
   Linux, UnixType, X, Xlib, xutil, GLX;
 {$ENDIF}
-{$IFDEF DARWIN}
+{ $IFDEF DARWIN}
 
-{$ENDIF}
+{ $ENDIF}
 
 const
   //mouse buttons.
