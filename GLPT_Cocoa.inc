@@ -56,24 +56,24 @@ begin
   {$note implement this}
 
   Result := [];
-  if (State[VK_SHIFT] and 128) <> 0 then
-    Include(Result, ssShift);
-  if (State[VK_MENU] and 128) <> 0 then
-    Include(Result, ssAlt);
-  if (State[VK_CONTROL] and 128) <> 0 then
-    Include(Result, ssCtrl);
-  if (State[VK_LBUTTON] and 128) <> 0 then
-    Include(Result, ssLeft);
-  if (State[VK_RBUTTON] and 128) <> 0 then
-    Include(Result, ssRight);
-  if (State[VK_MBUTTON] and 128) <> 0 then
-    Include(Result, ssMiddle);
-  if (State[VK_CAPITAL] and 1) <> 0 then
-    Include(Result, ssCaps);
-  if (State[VK_NUMLOCK] and 1) <> 0 then
-    Include(Result, ssNum);
-  if (State[VK_SCROLL] and 1) <> 0 then
-    Include(Result, ssScroll);
+  //if (State[VK_SHIFT] and 128) <> 0 then
+  //  Include(Result, ssShift);
+  //if (State[VK_MENU] and 128) <> 0 then
+  //  Include(Result, ssAlt);
+  //if (State[VK_CONTROL] and 128) <> 0 then
+  //  Include(Result, ssCtrl);
+  //if (State[VK_LBUTTON] and 128) <> 0 then
+  //  Include(Result, ssLeft);
+  //if (State[VK_RBUTTON] and 128) <> 0 then
+  //  Include(Result, ssRight);
+  //if (State[VK_MBUTTON] and 128) <> 0 then
+  //  Include(Result, ssMiddle);
+  //if (State[VK_CAPITAL] and 1) <> 0 then
+  //  Include(Result, ssCaps);
+  //if (State[VK_NUMLOCK] and 1) <> 0 then
+  //  Include(Result, ssNum);
+  //if (State[VK_SCROLL] and 1) <> 0 then
+  //  Include(Result, ssScroll);
 end;
 
 function Cocoa_Init: boolean;

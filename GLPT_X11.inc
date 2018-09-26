@@ -122,6 +122,8 @@ var
   event: TXEvent;
   win: pGLPTwindow;
   params: GLPT_MessageParams;
+  r: integer;
+  done: integer = 0;
 begin
   win := pGLPTwindow(windowlist.first);
 
