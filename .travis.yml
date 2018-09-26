@@ -1,0 +1,26 @@
+language: generic
+sudo: required
+dist: trusty
+
+os:
+  - linux
+  - osx
+
+install:
+  - echo $TRAVIS_OS_NAME
+  
+  - if [ ${TRAVIS_OS_NAME} == "linux" ]; then 
+        sudo apt-get update -qq;
+        sudo apt-get install -qq -y fpc; 
+    else
+        brew install fpc caskroom/cask/brew-cask;
+        brew cask install fpcsrc; 
+    fi
+  
+script:
+  - fpc GLPT.pas 
+
+notifications:
+  email:
+    on_success: false
+    on_failure: change
