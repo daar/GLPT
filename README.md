@@ -46,3 +46,10 @@ Using GLPT is easy, you only need to include the GLPT unit and create a window. 
 |    GLPT_WindowShouldClose | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> |
 
 > For Mac OSX only placeholder code is available, without access to a Mac this will probably remain so. Pull requests will be handled with priority.
+
+## Design considerations
+GLPT is planned to be a simple and easy to use library. When working on the code please consider the following; 
+
+* flat API, so no classes and no objects
+* no external dependencies are allowed, also adding FPC units should be considered carefully
+* only OpenGL context handling, no audio, font or UI included to name a few
