@@ -342,8 +342,12 @@ begin
     WM_KEYDOWN,
     WM_KEYUP:
               begin
-                params.keyboard.keychar := wParam;
                 params.keyboard.shiftstate := gdi_GetKeyboardShiftState;
+
+                if (ssShift in params.keyboard.shiftstate) or (ssCaps in params.keyboard.shiftstate) then
+                  params.keyboard.keychar := wParam
+                else
+                  params.keyboard.keychar := Ord(LowerCase(Chr(wParam)));
 
                 if message = WM_KEYDOWN then
                   glptPostMessage(win, GLPT_MESSAGE_KEYPRESS, params);
