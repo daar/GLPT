@@ -1,0 +1,5 @@
+/Console.*
+/Settings
+GLPT
+*.sublime-*
+target.txt
