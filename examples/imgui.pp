@@ -36,6 +36,7 @@ type
   end;
 
 var
+  curs: byte = GLPT_ARROW_CURSOR;
   uistate: UIStateType;
   window: pGLPTWindow;
   width: integer = 640;
@@ -397,7 +398,7 @@ var
 
   function GEN_ID: integer;
   begin
-    Inc(genid);
+    inc(genid);
     Result := genid;
   end;
 
@@ -408,8 +409,15 @@ var
   begin
     imgui_prepare;
 
-    button(GEN_ID, 50, 50);
+    if button(GEN_ID, 50, 50) = 1 then
+    begin
+      inc(curs);
 
+      if curs > GLPT_VRESIZE_CURSOR then
+        curs := GLPT_ARROW_CURSOR;
+
+      GLPT_SetCursor(curs);
+    end;
     button(GEN_ID, 150, 50);
 
     if button(GEN_ID, 50, 150) = 1 then

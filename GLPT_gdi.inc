@@ -1,6 +1,7 @@
 var
   wc: Windows.TWNDCLASS;
   h_Instance: HINST;
+  g_Cursor: LPCSTR = IDC_ARROW;
 
 function gdi_GetTime: double;
 begin
@@ -366,6 +367,8 @@ begin
              end;
     //WM_PAINT:
     //          glptPostMessage(win, GLPT_MESSAGE_PAINT, params);
+    WM_SETCURSOR:
+                  SetCursor(LoadCursor(0, g_Cursor));
     else
       begin
         //writeln(message);
@@ -392,7 +395,7 @@ begin
       cbWndExtra := 0;
       hInstance := h_Instance;
       hIcon := LoadIcon(0, IDI_WINLOGO);
-      hCursor := LoadCursor(0, IDC_ARROW);
+      hCursor := LoadCursor(0, g_Cursor);
       hbrBackground := 0;
       lpszMenuName := nil;
       lpszClassName := 'GLPT class';
@@ -419,5 +422,22 @@ end;
 
 procedure gdi_SetCursor(cursor: byte);
 begin
-  {$note implement this}
+  case cursor of
+     GLPT_ARROW_CURSOR:
+       g_Cursor := IDC_ARROW;
+     GLPT_IBEAM_CURSOR:
+       g_Cursor := IDC_IBEAM;
+     GLPT_CROSSHAIR_CURSOR:
+       g_Cursor := IDC_CROSS;
+     GLPT_HAND_CURSOR:
+       g_Cursor := IDC_HAND;
+     GLPT_HRESIZE_CURSOR:
+       g_Cursor := IDC_SIZEWE;
+     GLPT_VRESIZE_CURSOR:
+       g_Cursor := IDC_SIZENS;
+  else
+    g_Cursor := IDC_ARROW;
+  end;
+
+  SetCursor(LoadCursor(h_Instance, g_Cursor));
 end;

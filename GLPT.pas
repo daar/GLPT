@@ -515,6 +515,7 @@ var
 
   errfunc: GLPT_ErrorCallback = nil;
   windowlist: ListBase;
+  current_win: pGLPTwindow;
 
   inittime: double = 0;
   lasterr: GLPT_error;
@@ -703,6 +704,7 @@ var
   res: boolean = False;
 begin
   win := calloc(sizeof(GLPTWindow));
+  current_win := win;
 
 {$IFDEF MSWINDOWS}
   res := gdi_CreateWindow(win, posx, posy, sizex, sizey, title);
@@ -745,6 +747,8 @@ end;
 
 function GLPT_MakeCurrent(win: pGLPTwindow): boolean;
 begin
+  current_win := win;
+
 {$IFDEF MSWINDOWS}
   exit(gdi_MakeCurrent(win));
 {$ENDIF}
