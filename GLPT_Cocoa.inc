@@ -193,7 +193,7 @@ begin
 end;
 
 {=============================================}
-{@! ___GLTP___ } 
+{@! ___GLPT___ } 
 {=============================================}
 
 function Cocoa_GetTime: double;
@@ -366,6 +366,9 @@ begin
     GLPT_VRESIZE_CURSOR:
       NSCursor.resizeUpDownCursor.set_;
     otherwise
-      halt(-1);
+      begin
+        NSCursor.arrowCursor.set_;
+        glptError(GLPT_ERROR_PLATFORM, 'cursor is not supported, using GLPT_ARROW_CURSOR instead.');
+      end;
   end;
 end;
