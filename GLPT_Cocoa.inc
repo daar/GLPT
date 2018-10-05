@@ -1,15 +1,4 @@
 
-procedure NSShow (obj: id);
-begin
-  NSLog(obj.description, NSSTR('@'));
-end;
-
-procedure Fatal (msg: string);
-begin
-  writeln('FATAL: '+msg);
-  halt(-1);
-end;
-
 type
   TCocoaWindow = objcclass (NSWindow)
     ref: pGLPTwindow;
@@ -136,7 +125,7 @@ begin
       writeln('init opengl context');
       openGLContext := NSOpenGLContext.alloc.initWithFormat_shareContext(defaultPixelFormat, nil);
       if openGLContext = nil then
-        Fatal('invalid NSOpenGLContext');
+        glptError(GLPT_ERROR_PLATFORM, 'invalid NSOpenGLContext');
       openGLContext.makeCurrentContext;
       openGLContext.setView(self);
       //prepareOpenGL;
@@ -194,7 +183,7 @@ begin
 
   result := NSOpenGLPixelFormat.alloc.initWithAttributes(@attributes).autorelease;
   if result = nil then
-    Fatal('invalid NSOpenGLPixelFormat');
+    glptError(GLPT_ERROR_PLATFORM, 'invalid NSOpenGLPixelFormat');
 end;
 
 function TOpenGLView.initWithFrame(frameRect: NSRect): id;
@@ -290,7 +279,6 @@ end;
 
 function Cocoa_GetKeyboardShiftState: TShiftState;
 var
-  State: array[byte] of byte;
   modifierFlags: NSUInteger;
 begin
   modifierFlags := NSApp.currentEvent.modifierFlags;
@@ -325,7 +313,6 @@ var
   mainMenu: NSMenu;
   appleMenu: NSMenu;
   windowMenu: NSMenu;
-  menuItem: NSMenuItem;
 begin
 
   // main menu
@@ -344,7 +331,6 @@ begin
   windowMenu.addItemWithTitle_action_keyEquivalent(NSSTR('Zoom'), objcselector('performZoom:'), NSSTR(''));
 
   AddMenu(windowMenu);
-
 end;
 
 function Cocoa_Init: boolean;
