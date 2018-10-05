@@ -81,7 +81,6 @@ begin
           ;
       end;
 
-      //NSShow(event);
       sendEvent(event);
       updateWindows;
     end;
@@ -122,17 +121,14 @@ begin
   
   if openGLContext = nil then
     begin
-      writeln('init opengl context');
       openGLContext := NSOpenGLContext.alloc.initWithFormat_shareContext(defaultPixelFormat, nil);
       if openGLContext = nil then
         glptError(GLPT_ERROR_PLATFORM, 'invalid NSOpenGLContext');
       openGLContext.makeCurrentContext;
       openGLContext.setView(self);
-      //prepareOpenGL;
 
       openGLContext.setValues_forParameter_fixed(@swapInterval, NSOpenGLCPSwapInterval);
 
-      // http://www.cocoadev.com/index.pl?CocoaOpenGLTransparentBackground
       if not isOpaque then
         openGLContext.setValues_forParameter_fixed(@opacity, NSOpenGLCPSurfaceOpacity);
     end;
@@ -176,7 +172,8 @@ begin
   attributes[1] := NSOpenGLPFADoubleBuffer;
   //NSOpenGLPFAColorSize, 32
   //NSOpenGLPFADepthSize, 32
-  // todo: invalid NSOpenGLPixelFormat with core profile 
+  // todo: invalid NSOpenGLPixelFormat with core profile.
+  // this is a bug but I don't know how to fix it right now
   attributes[2] := NSOpenGLPFAOpenGLProfile;
   attributes[3] := NSOpenGLProfileVersionLegacy;
   attributes[4] := 0;
@@ -260,8 +257,8 @@ end;
 
 procedure Cocoa_PollEvents;
 begin
-  //TCocoaApp(TCocoaApp.sharedApplication).poll;
   // note: do we really need to call on main thread? isn't the first thread "main"?
+  //TCocoaApp(TCocoaApp.sharedApplication).poll;
   NSApplication.sharedApplication.performSelectorOnMainThread_withObject_waitUntilDone(objcselector('poll'), nil, true);
 end;
 
@@ -337,9 +334,7 @@ function Cocoa_Init: boolean;
 var
   pool: NSAutoreleasePool;
   app: TCocoaApp;
-begin
-  // https://cocoawithlove.com/2009/01/demystifying-nsapplication-by.html
-  
+begin  
   pool := NSAutoreleasePool.alloc.init;
 
   app := TCocoaApp(TCocoaApp.sharedApplication);
