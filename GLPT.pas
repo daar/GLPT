@@ -24,11 +24,13 @@ unit GLPT;
 
 {$mode objfpc}
 
+{$IFDEF DARWIN}
+  {$modeswitch objectivec1}
+{$ENDIF}
+
 interface
 
-{$IFNDEF DARWIN}
 uses
-{$ENDIF}
 {$IFDEF MSWINDOWS}
   Windows;
 {$ENDIF}
@@ -36,8 +38,9 @@ uses
   Linux, UnixType, X, Xlib, xutil, GLX;
 {$ENDIF}
 {$IFDEF DARWIN}
-
+  CocoaAll;
 {$ENDIF}
+
 
 const
   //mouse buttons.
@@ -328,6 +331,8 @@ type
     wmDeleteMessage: TAtom;   //< X11 delete mesage callback
 {$ENDIF}
 {$IFDEF DARWIN}
+    ref: NSWindow;
+    context: NSOpenGLContext
 {$ENDIF}
   end;
 
