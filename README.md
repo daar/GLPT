@@ -59,8 +59,6 @@ GLPT is planned to be a simple and easy to use library. When working on the code
 
 ## Contributors
 <!-- CONTRIBUTOR-LIST:START -->
-* daar (48)
-* Ryan Joseph (4)
-
-> as per October 7th, 2018
+* Darius Blaszyk
+* Ryan Joseph
 <!-- CONTRIBUTOR-LIST:END -->
