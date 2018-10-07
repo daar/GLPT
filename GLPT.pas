@@ -43,6 +43,11 @@ uses
 
 
 const
+  //OpenGL Pascal Toolkit version
+  GLPT_VERSION_MAJOR = 0;
+  GLPT_VERSION_MINOR = 1;
+  GLPT_VERSION_REVISION = 1;
+
   //mouse buttons.
   GLPT_MOUSE_BUTTON_LEFT = $00000001;
   GLPT_MOUSE_BUTTON_MIDDLE = $00000002;
@@ -389,6 +394,12 @@ type
   end;
 
 {
+   This function returns the GLPT version as string.
+   @return the GLPT version
+}
+function GLPT_GetVersionString: string;
+
+{
    This function returns the last occurred error message. Please note that also the error callback function returns the
    same error message.
    @return the error string
@@ -632,6 +643,17 @@ end;
 {$ENDIF}
 
 //***  API functions  **************************************************************************************************
+
+function GLPT_GetVersionString: string;
+var
+  major, minor, revision: string;
+begin
+  str(GLPT_VERSION_MAJOR, major);
+  str(GLPT_VERSION_MINOR, minor);
+  str(GLPT_VERSION_REVISION, revision);
+
+  exit(major + '.' + minor + '.' + revision);
+end;
 
 function GLPT_GetLastError: string;
 begin

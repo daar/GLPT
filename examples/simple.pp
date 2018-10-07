@@ -74,6 +74,7 @@ begin
 
   window^.event_callback := @event_callback;
 
+  writeln('GLPT version: ', GLPT_GetVersionString);
   writeln('OpenGL version: ', glGetString(GL_VERSION));
 
   while not GLPT_WindowShouldClose(window) do
