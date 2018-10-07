@@ -55,3 +55,11 @@ GLPT is planned to be a simple and easy to use library. When working on the code
 * flat API, so no classes and no objects
 * no external dependencies are allowed, also adding FPC units should be considered carefully
 * only OpenGL context handling, no audio, font or UI included to name a few
+
+## Contributors
+<!-- CONTRIBUTOR-LIST:START -->
+* daar (48)
+* Ryan Joseph (4)
+
+> as per October 7th, 2018
+<!-- CONTRIBUTOR-LIST:END -->
