@@ -1,4 +1,4 @@
-program extract_API;
+program update_readme;
 
 uses
   Classes,
@@ -16,7 +16,8 @@ type
 var
   api: TStringList;
   list: TStringList;
-  i: integer = 0;
+  readme: TStringList;
+  i: integer;
   s: string;
   p, j: integer;
   api_list: array of OS;
@@ -69,7 +70,7 @@ begin
       list.Add(s);
     end;
 
-    Inc(i);
+    inc(i);
   end;
 
   //open the ini file
@@ -78,32 +79,47 @@ begin
   //create the api_list
   list.Sort;
   SetLength(api_list, list.Count);
-  for j := 0 to list.Count - 1 do
+  for i := 0 to list.Count - 1 do
   begin
-    api_list[j].Name := list[j];
-    api_list[j].linux := ini.ReadString(list[j], 'Linux', 'Not implemented');
-    api_list[j].mac := ini.ReadString(list[j], 'MacOSX', 'Not implemented');
-    api_list[j].win := ini.ReadString(list[j], 'Windows', 'Not implemented');
+    api_list[i].Name := list[i];
+    api_list[i].linux := ini.ReadString(list[i], 'Linux', 'Not implemented');
+    api_list[i].mac := ini.ReadString(list[i], 'MacOSX', 'Not implemented');
+    api_list[i].win := ini.ReadString(list[i], 'Windows', 'Not implemented');
   end;
+
+  readme := TStringList.Create;
+  readme.LoadFromFile('../README.md');
+
+  //remove old API list
+  i := 0;
+  while readme[i] <> '<!-- API-SUPPORT-LIST:START -->' do
+    inc(i);
+
+  inc(i);
+  while readme[i] <> '<!-- API-SUPPORT-LIST:END -->' do
+    readme.Delete(i);
 
   //print API list
-  writeln('| API                       | Linux (X11)     | Mac OSX (Cocoa) | Windows (GDI)   | ');
-  writeln('|---------------------------|-----------------|-----------------|-----------------|');
-  for j := 0 to list.Count - 1 do
+  for j := list.Count - 1 downto 0 do
   begin
-    writeln('| ', api_list[j].Name: 25, ' | ', asIcon(api_list[j].linux),
-      ' | ', asIcon(api_list[j].mac), ' | ', asIcon(api_list[j].win), ' | ');
+    readme.Insert(i, '| ' + api_list[j].Name + ' | ' + asIcon(api_list[j].linux) +
+      ' | ' + asIcon(api_list[j].mac) + ' | ' + asIcon(api_list[j].win) + ' | ');
   end;
+  readme.Insert(i, '|---------------------------|-----------------|-----------------|-----------------|');
+  readme.Insert(i, '| API                       | Linux (X11)     | Mac OSX (Cocoa) | Windows (GDI)   | ');
+
+  readme.SaveToFile('../README.md');
 
   //write INI
-  for j := 0 to list.Count - 1 do
+  for i := 0 to list.Count - 1 do
   begin
-    ini.WriteString(api_list[j].Name, 'Linux', api_list[j].linux);
-    ini.WriteString(api_list[j].Name, 'MacOSX', api_list[j].mac);
-    ini.WriteString(api_list[j].Name, 'Windows', api_list[j].win);
+    ini.WriteString(api_list[i].Name, 'Linux', api_list[i].linux);
+    ini.WriteString(api_list[i].Name, 'MacOSX', api_list[i].mac);
+    ini.WriteString(api_list[i].Name, 'Windows', api_list[i].win);
   end;
 
   ini.Free;
   list.Free;
   api.Free;
+  readme.Free;
 end.
