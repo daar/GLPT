@@ -28,8 +28,8 @@ Using GLPT is easy, you only need to include the GLPT unit and create a window. 
 
       GLPT_Terminate;
 
-## API support
 <!-- API-SUPPORT-LIST:START -->
+## API (v0.1.1) support
 | API                       | Linux (X11)     | Mac OSX (Cocoa) | Windows (GDI)   | 
 |---------------------------|-----------------|-----------------|-----------------|
 | GLPT_CreateWindow | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | <img src="https://github.com/daar/GLPT/blob/master/doc/green.svg"> | 
