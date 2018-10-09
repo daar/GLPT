@@ -148,8 +148,19 @@ begin
 end;
 
 procedure TOpenGLView.reshape;
+var
+  params: GLPT_MessageParams;
 begin
   openGLContext.update;
+
+  if window <> nil then
+    begin
+      params.rect.top := 0;
+      params.rect.left := 0;
+      params.rect.width  := trunc(bounds.size.width);
+      params.rect.height := trunc(bounds.size.height);
+      glptPostMessage(TCocoaWindow(window).ref, GLPT_MESSAGE_RESIZE, params);      
+    end;
 end;
 
 function TOpenGLView.isOpaque: Boolean;
