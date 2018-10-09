@@ -3,7 +3,8 @@ program update_readme;
 uses
   Classes,
   SysUtils,
-  IniFiles;
+  IniFiles,
+  GLPT;
 
 type
   OS = record
@@ -14,7 +15,7 @@ type
   end;
 
 var
-  api: TStringList;
+  source: TStringList;
   list: TStringList;
   readme: TStringList;
   i: integer;
@@ -38,40 +39,41 @@ var
   end;
 
 begin
-  api := TStringList.Create;
-  api.LoadFromFile('../GLPT.pas');
+  source := TStringList.Create;
+  source.LoadFromFile('../GLPT.pas');
 
   list := TStringList.Create;
 
   //skip until 'interface' is found
-  while Trim(api[i]) <> 'interface' do
+  while Trim(source[i]) <> 'interface' do
     Inc(i);
 
   //stop when 'implementation' is found
-  while Trim(api[i]) <> 'implementation' do
+  while Trim(source[i]) <> 'implementation' do
   begin
-    if pos('function', LowerCase(api[i])) = 1 then
+    if pos('function', LowerCase(source[i])) = 1 then
     begin
-      p := Pos('(', api[i]);
+      p := Pos('(', source[i]);
       if p = 0 then
-        p := Pos(':', api[i]);
+        p := Pos(':', source[i]);
 
-      s := Trim(Copy(api[i], 9, p - 9));
+      s := Trim(Copy(source[i], 9, p - 9));
       list.Add(s);
     end;
 
-    if pos('procedure', LowerCase(api[i])) = 1 then
+    if pos('procedure', LowerCase(source[i])) = 1 then
     begin
-      p := Pos('(', api[i]);
+      p := Pos('(', source[i]);
       if p = 0 then
-        p := Pos(';', api[i]);
+        p := Pos(';', source[i]);
 
-      s := Trim(Copy(api[i], 10, p - 10));
+      s := Trim(Copy(source[i], 10, p - 10));
       list.Add(s);
     end;
 
     inc(i);
   end;
+  source.Free;
 
   //open the ini file
   ini := TIniFile.Create('GLPT.ini');
@@ -106,9 +108,11 @@ begin
       ' | ' + asIcon(api_list[j].mac) + ' | ' + asIcon(api_list[j].win) + ' | ');
   end;
   readme.Insert(i, '|---------------------------|-----------------|-----------------|-----------------|');
-  readme.Insert(i, '| API                       | Linux (X11)     | Mac OSX (Cocoa) | Windows (GDI)   | ');
+  readme.Insert(i, '| API function              | Linux (X11)     | Mac OSX (Cocoa) | Windows (GDI)   |');
+  readme.Insert(i, '## API (v' + GLPT_GetVersionString + ') support');
 
   readme.SaveToFile('../README.md');
+  readme.Free;
 
   //write INI
   for i := 0 to list.Count - 1 do
@@ -120,6 +124,4 @@ begin
 
   ini.Free;
   list.Free;
-  api.Free;
-  readme.Free;
 end.
