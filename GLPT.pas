@@ -348,7 +348,7 @@ type
 {$ENDIF}
 {$IFDEF DARWIN}
     ref: NSWindow;
-    context: NSOpenGLContext
+    GLcontext: NSOpenGLContext
 {$ENDIF}
   end;
 

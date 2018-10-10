@@ -242,7 +242,7 @@ begin
 
   window.makeKeyAndOrderFront(NSApplication.sharedApplication);
 
-  win^.context := openGLView.openGLContext;
+  win^.GLcontext := openGLView.openGLContext;
   win^.ref := window;
 
   exit(True);
@@ -250,7 +250,7 @@ end;
 
 function Cocoa_MakeCurrent(win: pGLPTwindow): boolean;
 begin
-  win^.context.makeCurrentContext;
+  win^.GLcontext.makeCurrentContext;
 
   exit(True);
 end;
