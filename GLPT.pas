@@ -310,6 +310,16 @@ type
   GLPT_EventCallback = procedure(msg: pGLPT_MessageRec);
   GLPT_ErrorCallback = procedure(const error: integer; const description: string);
 
+  GLPT_Context = record
+    colorSize: byte;
+    depthSize: byte;
+    doubleBuffer: boolean;
+    majorVersion: byte;
+    minorVersion: byte;
+    profile: byte;
+    stencilSize: byte;
+  end;
+
   pGLPTwindow = ^GLPTwindow;
 
   GLPTWindow = record
@@ -318,6 +328,7 @@ type
 
     //Window settings and state
 
+    context: GLPT_Context;
     fscreen: boolean;        //< Flag that indictes if the window is fullscreen or not
     shouldClose: boolean;    //< Flag indicating if the window should close
 
@@ -447,7 +458,7 @@ procedure GLPT_SetWindowShouldClose(win: pGLPTwindow; Value: boolean);
    @param title: the title of the window
    @return a reference to the created window
 }
-function GLPT_CreateWindow(posx, posy, sizex, sizey: integer; title: PChar): pGLPTwindow;
+function GLPT_CreateWindow(posx, posy, sizex, sizey: integer; title: PChar; context: GLPT_Context): pGLPTwindow;
 
 {
    Destroys a window and its associated context.
@@ -543,7 +554,7 @@ var
   errmsg: string;
 begin
   case error of
-    GLPT_ERROR_NONE: errmsg := 'GLPT_ERROR_PLATFORM : ' + msg;
+    GLPT_ERROR_NONE: errmsg := 'GLPT_ERROR_NONE : ' + msg;
     GLPT_ERROR_PLATFORM: errmsg := 'GLPT_ERROR_PLATFORM : ' + msg;
     GLPT_ERROR_UNKNOWN: errmsg := 'GLPT_ERROR_UNKNOWN : ' + msg;
     else
@@ -725,13 +736,24 @@ begin
   win^.shouldClose := value;
 end;
 
-function GLPT_CreateWindow(posx, posy, sizex, sizey: integer; title: PChar): pGLPTwindow;
+function GLPT_CreateWindow(posx, posy, sizex, sizey: integer; title: PChar; context: GLPT_Context): pGLPTwindow;
 var
   win: pGLPTwindow = nil;
   res: boolean = False;
 begin
   win := calloc(sizeof(GLPTWindow));
   current_win := win;
+
+  win^.context := context;
+
+  //do a sanity check for the context
+  if (context.colorSize = 0) or
+     (context.depthSize = 0) or
+     (context.majorVersion = 0) or
+     (context.minorVersion = 0) or
+     (context.profile = 0) or
+     (context.stencilSize = 0) then
+  glptError(GLPT_ERROR_PLATFORM, 'GLPT_Context not setup correctly, please verify');
 
 {$IFDEF MSWINDOWS}
   res := gdi_CreateWindow(win, posx, posy, sizex, sizey, title);

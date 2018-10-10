@@ -14,6 +14,7 @@ var
   nbFrames: longint = 0;
   lastTime: double;
   rotate: double;
+  context: GLPT_Context;
 
   procedure write_FPS;
   var
@@ -63,7 +64,15 @@ begin
   if not GLPT_Init then
     halt(-1);
 
-  window := GLPT_CreateWindow(0, 0, width, height, 'Simple example');
+  context.colorSize := 16;
+  context.depthSize := 16;
+  context.doubleBuffer := True;
+  context.majorVersion := 4;
+  context.minorVersion := 5;
+  context.profile := 16;
+  context.stencilSize := 16;
+
+  window := GLPT_CreateWindow(0, 0, width, height, 'Simple example', context);
   if window = nil then
   begin
     GLPT_Terminate;
