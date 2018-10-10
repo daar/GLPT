@@ -58,6 +58,7 @@ GLPT is planned to be a simple and easy to use library. When working on the code
 * only OpenGL context handling, no audio, font or UI included to name a few
 
 ## Contributors
+GLPT is made possible thanks to people that are willing to spend their time and lend their skills, helping to code and submit new ideas.
 <!-- CONTRIBUTOR-LIST:START -->
 * Darius Blaszyk (daar)
 * Ryan Joseph (genericptr)
