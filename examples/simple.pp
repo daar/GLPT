@@ -67,10 +67,10 @@ begin
   context.colorSize := 16;
   context.depthSize := 16;
   context.doubleBuffer := True;
-  context.majorVersion := 4;
-  context.minorVersion := 5;
-  context.profile := 16;
-  context.stencilSize := 16;
+  context.majorVersion := 2;
+  context.minorVersion := 1;
+  context.profile := GLPT_CONTEXT_PROFILE_LEGACY;
+  context.stencilSize := 8;
 
   window := GLPT_CreateWindow(0, 0, width, height, 'Simple example', context);
   if window = nil then

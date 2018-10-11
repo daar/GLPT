@@ -1,12 +1,65 @@
 
+{=============================================}
+{@! ___COCOA UTILS___ } 
+{=============================================}
+
+function NSSTR(str: string): NSString; overload;
+begin
+  result := NSString.stringWithCString_length(@str[1], length(str));
+end;
+
+{=============================================}
+{@! ___COCOA WINDOW___ } 
+{=============================================}
+
 type
   TCocoaWindow = objcclass (NSWindow)
-    ref: pGLPTwindow;
+    private
+      ref: pGLPTwindow;
+      procedure close; override;
+      procedure becomeKeyWindow; override;
+      procedure resignKeyWindow; override;
+      procedure doCommandBySelector(aSelector: SEL); override;
   end;
+
+procedure TCocoaWindow.close;
+begin
+  ref^.shouldClose := true;
+  inherited;
+end;
+
+procedure TCocoaWindow.doCommandBySelector(aSelector: SEL);
+begin
+  // do nothing to prevent beeping
+end;
+
+procedure TCocoaWindow.becomeKeyWindow;
+var
+  params: GLPT_MessageParams;
+begin
+  inherited;
+  glptPostMessage(ref, GLPT_MESSAGE_ACTIVATE, params);      
+end;
+
+procedure TCocoaWindow.resignKeyWindow;
+var
+  params: GLPT_MessageParams;
+begin
+  inherited;
+  glptPostMessage(ref, GLPT_MESSAGE_DEACTIVATE, params);
+end;
+
+{=============================================}
+{@! ___COCOA APP___ } 
+{=============================================}
 
 type
   TCocoaApp = objcclass (NSApplication)
     procedure poll; message 'poll';
+  end;
+
+type
+  TCocoaAppDelegate = objcclass (NSObject, NSApplicationDelegateProtocol)
   end;
 
 function Cocoa_GetKeyboardShiftState: TShiftState; forward;
@@ -21,9 +74,11 @@ var
   pool: NSAutoreleasePool;
 begin
   pool := NSAutoreleasePool.alloc.init;
-  event := nextEventMatchingMask_untilDate_inMode_dequeue(NSAnyEventMask, nil, NSDefaultRunLoopMode, true);
+  event := nextEventMatchingMask_untilDate_inMode_dequeue(NSAnyEventMask, {NSDate.distantPast}nil, NSDefaultRunLoopMode, true);
   if event <> nil then
     begin
+      //writeln(event.description.utf8string);
+
       if event.window <> nil then
         win := TCocoaWindow(event.window).ref;
 
@@ -98,9 +153,17 @@ type
       function isOpaque: Boolean; override;
     private
       openGLContext: NSOpenGLContext;
-      
+      trackingArea: NSTrackingArea;
+
       function defaultPixelFormat: NSOpenGLPixelFormat; message 'defaultPixelFormat';
+      function windowRef: pGLPTwindow; message 'windowRef';
+
       procedure viewDidMoveToWindow; override;
+      procedure mouseEntered(theEvent: NSEvent); override;
+      procedure mouseExited(theEvent: NSEvent); override;
+      procedure doCommandBySelector(aSelector: SEL); override;
+      procedure updateTrackingAreas; override;
+
       procedure frameChanged (sender: NSNotification); message 'frameChanged:';
       procedure drawRect(dirtyRect: NSRect); override;
       procedure reshape; message 'reshape';
@@ -111,6 +174,38 @@ type
   NSOpenGLContext_Fixed = objccategory external (NSOpenGLContext)
     procedure setValues_forParameter_fixed (vals: pointer; param: NSOpenGLContextParameter); overload; message 'setValues:forParameter:';
   end;
+
+function TOpenGLView.windowRef: pGLPTwindow;
+begin
+  result := TCocoaWindow(window).ref;
+end;
+
+procedure TOpenGLView.updateTrackingAreas;
+begin 
+  if trackingArea <> nil then
+    removeTrackingArea(trackingArea);
+  trackingArea := NSTrackingArea.alloc.initWithRect_options_owner_userInfo(bounds, NSTrackingMouseEnteredAndExited + NSTrackingActiveAlways, self, nil).autorelease;
+  addTrackingArea(trackingArea);
+end;
+
+procedure TOpenGLView.doCommandBySelector(aSelector: SEL);
+begin
+  // do nothing to prevent beeping
+end;
+
+procedure TOpenGLView.mouseEntered(theEvent: NSEvent);
+var
+   params: GLPT_MessageParams;
+begin
+  glptPostMessage(windowRef, GLPT_MESSAGE_MOUSEENTER, params);      
+end;
+
+procedure TOpenGLView.mouseExited(theEvent: NSEvent);
+var
+   params: GLPT_MessageParams;
+begin
+  glptPostMessage(windowRef, GLPT_MESSAGE_MOUSEEXIT, params);   
+end;
 
 procedure TOpenGLView.viewDidMoveToWindow;
 var
@@ -159,7 +254,7 @@ begin
       params.rect.left := 0;
       params.rect.width  := trunc(bounds.size.width);
       params.rect.height := trunc(bounds.size.height);
-      glptPostMessage(TCocoaWindow(window).ref, GLPT_MESSAGE_RESIZE, params);      
+      glptPostMessage(windowRef, GLPT_MESSAGE_RESIZE, params);      
     end;
 end;
 
@@ -170,6 +265,11 @@ begin
 end;
 
 function TOpenGLView.defaultPixelFormat: NSOpenGLPixelFormat;
+function Inc (var i: integer): integer;
+begin
+  i += 1;
+  result := i;
+end;
 const
   NSOpenGLPFAOpenGLProfile = 99 { available in 10_7 };
 const
@@ -178,16 +278,45 @@ const
   NSOpenGLProfileVersion4_1Core = $4100 { available in 10_10 };
 var
   attributes: array[0..4] of NSOpenGLPixelFormatAttribute;
+  i: integer = -1;
+  context: GLPT_Context;
 begin
-  attributes[0] := NSOpenGLPFAWindow;
-  attributes[1] := NSOpenGLPFADoubleBuffer;
-  //NSOpenGLPFAColorSize, 32
-  //NSOpenGLPFADepthSize, 32
-  // todo: invalid NSOpenGLPixelFormat with core profile.
-  // this is a bug but I don't know how to fix it right now
-  attributes[2] := NSOpenGLPFAOpenGLProfile;
-  attributes[3] := NSOpenGLProfileVersionLegacy;
-  attributes[4] := 0;
+  context := TCocoaWindow(window).ref^.context;
+
+  // note: implement this?
+  //if (_this->gl_config.accelerated >= 0) {
+  //    if (_this->gl_config.accelerated) {
+  //        attr[i++] = NSOpenGLPFAAccelerated;
+  //    } else {
+  //        attr[i++] = NSOpenGLPFARendererID;
+  //        attr[i++] = kCGLRendererGenericFloatID;
+  //    }
+  //}
+
+  if context.doubleBuffer then
+    attributes[Inc(i)] := NSOpenGLPFADoubleBuffer;
+  attributes[Inc(i)] := NSOpenGLPFAColorSize;
+  attributes[Inc(i)] := context.colorSize;
+  attributes[Inc(i)] := NSOpenGLPFADepthSize;
+  attributes[Inc(i)] := context.depthSize;
+  attributes[Inc(i)] := NSOpenGLPFAStencilSize;
+  attributes[Inc(i)] := context.stencilSize;
+  attributes[Inc(i)] := NSOpenGLPFAOpenGLProfile;
+  // note: we can only specify "legacy" or "core" on mac and the system will decide what version we actually get
+  if context.profile = GLPT_CONTEXT_PROFILE_LEGACY then
+    attributes[Inc(i)] := NSOpenGLProfileVersionLegacy
+  else if context.profile = GLPT_CONTEXT_PROFILE_CORE then
+    begin
+      if context.majorVersion = 3 then
+        attributes[Inc(i)] := NSOpenGLProfileVersion3_2Core
+      else if context.majorVersion = 4 then
+        attributes[Inc(i)] := NSOpenGLProfileVersion4_1Core
+      else
+        glptError(GLPT_ERROR_PLATFORM, 'invalid core profile major version');
+    end
+  else
+    glptError(GLPT_ERROR_PLATFORM, 'invalid context profile');
+  attributes[Inc(i)] := 0;
 
   result := NSOpenGLPixelFormat.alloc.initWithAttributes(@attributes).autorelease;
   if result = nil then
@@ -198,9 +327,7 @@ function TOpenGLView.initWithFrame(frameRect: NSRect): id;
 begin
   result := inherited initWithFrame(frameRect);
   if result <> nil then
-    begin
-      NSNotificationCenter(NSNotificationCenter.defaultCenter).addObserver_selector_name_object(result, objcselector('frameChanged:'), NSViewGlobalFrameDidChangeNotification, nil);
-    end;
+    NSNotificationCenter(NSNotificationCenter.defaultCenter).addObserver_selector_name_object(result, objcselector('frameChanged:'), NSViewGlobalFrameDidChangeNotification, nil);
 end;
 
 {=============================================}
@@ -225,6 +352,9 @@ begin
 end;
 
 function Cocoa_CreateWindow(win: pGLPTwindow; posx, posy, sizex, sizey: integer; title: PChar): boolean;
+const
+  NSWindowCollectionBehaviorFullScreenPrimary = 1 shl 7 { available in 10_7 };
+  NSWindowCollectionBehaviorFullScreenAuxiliary = 1 shl 8 { available in 10_7 };
 var
   window: TCocoaWindow;
   openGLView: TOpenGLView;
@@ -238,11 +368,13 @@ begin
   openGLView.release;
 
   // todo: how do we stop beeping on mouse down??
-  window.makeFirstResponder(openGLView);
+  //window.makeFirstResponder(openGLView);
 
-  window.makeKeyAndOrderFront(NSApplication.sharedApplication);
+  window.setCollectionBehavior(NSWindowCollectionBehaviorFullScreenPrimary);
+  window.setAcceptsMouseMovedEvents(true);
+  window.makeKeyAndOrderFront(nil);
 
-  win^.GLcontext := openGLView.openGLContext;
+  win^.glcontext := openGLView.openGLContext;
   win^.ref := window;
 
   exit(True);
@@ -250,7 +382,7 @@ end;
 
 function Cocoa_MakeCurrent(win: pGLPTwindow): boolean;
 begin
-  win^.GLcontext.makeCurrentContext;
+  win^.glcontext.makeCurrentContext;
 
   exit(True);
 end;
@@ -270,7 +402,7 @@ procedure Cocoa_PollEvents;
 begin
   // note: do we really need to call on main thread? isn't the first thread "main"?
   //TCocoaApp(TCocoaApp.sharedApplication).poll;
-  NSApplication.sharedApplication.performSelectorOnMainThread_withObject_waitUntilDone(objcselector('poll'), nil, true);
+  NSApp.performSelectorOnMainThread_withObject_waitUntilDone(objcselector('poll'), nil, true);
 end;
 
 procedure Cocoa_GetDisplayCoords(var dr: GLPTRect);
@@ -329,7 +461,7 @@ begin
 
   // apple menu
   appleMenu := NSMenu.alloc.initWithTitle(NSSTR('')).autorelease;
-  appleMenu.addItemWithTitle_action_keyEquivalent(NSSTR('Quit'), objcselector('terminate:'), NSSTR('q'));
+  appleMenu.addItemWithTitle_action_keyEquivalent(NSSTR('Quit '+NSProcessInfo.processInfo.processName.UTF8String), objcselector('terminate:'), NSSTR('q'));
 
   AddMenu(appleMenu);
 
@@ -345,16 +477,23 @@ function Cocoa_Init: boolean;
 var
   pool: NSAutoreleasePool;
   app: TCocoaApp;
+  delegate: TCocoaAppDelegate;
 begin  
+  // https://hero.handmade.network/forums/code-discussion/t/1409-main_game_loop_on_os_x
+
   pool := NSAutoreleasePool.alloc.init;
 
   app := TCocoaApp(TCocoaApp.sharedApplication);
+  
+  delegate := TCocoaAppDelegate.alloc.init;
+  app.setDelegate(delegate);
+
+  NSApp.setActivationPolicy(NSApplicationActivationPolicyRegular);
+  NSApp.activateIgnoringOtherApps(true);
 
   if NSApp.mainMenu = nil then
     SetupMainMenu;
   app.finishLaunching;
-
-  NSApp.activateIgnoringOtherApps(true);
 
   pool.release;
 

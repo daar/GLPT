@@ -293,6 +293,10 @@ const
   GLPT_KEY_PA1 = 253;
   GLPT_KEY_OEM_CLEAR = 254;
 
+const
+  GLPT_CONTEXT_PROFILE_LEGACY = 1;
+  GLPT_CONTEXT_PROFILE_CORE = 2;
+
 type
   { Types used by standard events }
   TShiftStateEnum = (ssShift, ssAlt, ssCtrl,
@@ -448,6 +452,11 @@ function GLPT_WindowShouldClose(win: pGLPTwindow): boolean;
    @param Value: the value that should be given to the internal state variable
 }
 procedure GLPT_SetWindowShouldClose(win: pGLPTwindow; Value: boolean);
+
+{
+  Returns default OpenGL context settings.
+}
+function GLPT_GetDefaultContext: GLPT_Context;
 
 {
    Creates a window and its associated context.
@@ -734,6 +743,17 @@ end;
 procedure GLPT_SetWindowShouldClose(win: pGLPTwindow; value: boolean);
 begin
   win^.shouldClose := value;
+end;
+
+function GLPT_GetDefaultContext: GLPT_Context;
+begin
+  result.colorSize := 32;
+  result.depthSize := 32;
+  result.doubleBuffer := true;
+  result.majorVersion := 2;
+  result.minorVersion := 1;
+  result.profile := GLPT_CONTEXT_PROFILE_LEGACY;
+  result.stencilSize := 8;
 end;
 
 function GLPT_CreateWindow(posx, posy, sizex, sizey: integer; title: PChar; context: GLPT_Context): pGLPTwindow;
