@@ -14,7 +14,6 @@ var
   nbFrames: longint = 0;
   lastTime: double;
   rotate: double;
-  context: GLPT_Context;
 
   procedure write_FPS;
   var
@@ -47,9 +46,8 @@ var
 
       GLPT_MESSAGE_KEYPRESS:
       begin
-        writeln(event^.params.keyboard.keychar);
-
-        if event^.params.keyboard.keychar = GLPT_KEY_ESCAPE then
+        //writeln(event^.params.keyboard.keycode);
+        if event^.params.keyboard.keycode = GLPT_KEY_ESCAPE then
           GLPT_SetWindowShouldClose(event^.win, True);
       end;
 
@@ -64,15 +62,7 @@ begin
   if not GLPT_Init then
     halt(-1);
 
-  context.colorSize := 16;
-  context.depthSize := 16;
-  context.doubleBuffer := True;
-  context.majorVersion := 2;
-  context.minorVersion := 1;
-  context.profile := GLPT_CONTEXT_PROFILE_LEGACY;
-  context.stencilSize := 8;
-
-  window := GLPT_CreateWindow(0, 0, width, height, 'Simple example', context);
+  window := GLPT_CreateWindow(GLPT_WINDOW_POS_CENTER, GLPT_WINDOW_POS_CENTER, width, height, 'Simple example', GLPT_GetDefaultContext);
   if window = nil then
   begin
     GLPT_Terminate;
@@ -88,7 +78,7 @@ begin
 
   while not GLPT_WindowShouldClose(window) do
   begin
-    write_FPS;
+    //write_FPS;
 
     glViewport(0, 0, width, height);
     glClear(GL_COLOR_BUFFER_BIT);
