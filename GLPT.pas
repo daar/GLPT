@@ -46,7 +46,7 @@ const
   //OpenGL Pascal Toolkit version
   GLPT_VERSION_MAJOR = 0;
   GLPT_VERSION_MINOR = 1;
-  GLPT_VERSION_REVISION = 1;
+  GLPT_VERSION_REVISION = 2;
 
   //mouse buttons.
   GLPT_MOUSE_BUTTON_LEFT = $00000001;
