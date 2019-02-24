@@ -232,7 +232,7 @@ var
     {  233 }    GLPT_SCANCODE_UNKNOWN, { KEY_FORWARDMAIL }
     {  234 }    GLPT_SCANCODE_UNKNOWN, { KEY_SAVE }
     {  235 }    GLPT_SCANCODE_UNKNOWN, { KEY_DOCUMENTS }
-    {  236 }    GLPT_SCANCODE_UNKNOWN, { KEY_BATTERY }
+    {  236 }    GLPT_SCANCODE_UNKNOWN { KEY_BATTERY }
 );
 
 // GLPT_x11keyboard.c
@@ -462,7 +462,7 @@ begin
                     begin
                       r := XLookupString(@event.xkey, @buffer, sizeof(buffer), nil, nil);
 
-                      params.keyboard.keychar := Ord(buffer[0]);
+                      params.keyboard.keycode := Ord(buffer[0]);
                       //params.keyboard.shiftstate := X11_GetKeyboardShiftState;
 
                       if event._type = KeyPress then
