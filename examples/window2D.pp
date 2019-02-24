@@ -46,9 +46,9 @@ var
     case event^.mcode of
       GLPT_MESSAGE_KEYPRESS:
       begin
-        writeln(event^.params.keyboard.keychar);
+        writeln(event^.params.keyboard.keycode);
 
-        if event^.params.keyboard.keychar = GLPT_KEY_ESCAPE then
+        if event^.params.keyboard.keycode = GLPT_KEY_ESCAPE then
           GLPT_SetWindowShouldClose(event^.win, True);
       end;
       GLPT_MESSAGE_MOUSEDOWN:
@@ -64,7 +64,7 @@ begin
   if not GLPT_Init then
     halt(-1);
 
-  window := GLPT_CreateWindow(0, 0, width, height, 'Simple example');
+  window := GLPT_CreateWindow(0, 0, width, height, 'Simple example', GLPT_GetDefaultContext);
   if window = nil then
   begin
     GLPT_Terminate;

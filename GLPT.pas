@@ -858,6 +858,9 @@ function GLPT_GetScancodeName (scanecode: GLPT_Scancode): string;
 
 implementation
 
+uses
+  SysUtils;
+
 {$i GLPT_Keyboard.inc}
 
 const
@@ -1033,15 +1036,7 @@ end;
 
 function GLPT_GetTicks: longint;
 begin
-{$IFDEF MSWINDOWS}
-  exit(gdi_GetTicks - initticks);
-{$ENDIF}
-{$IFDEF LINUX}
-  exit(X11_GetTicks - initticks);
-{$ENDIF}
-{$IFDEF DARWIN}
-  exit(Cocoa_GetTicks - initticks);
-{$ENDIF}
+  exit(Trunc(GLPT_GetTime * 1000));
 end;
 
 function GLPT_Init: boolean;
@@ -1270,10 +1265,10 @@ end;
 function GLPT_GetBasePath: string;
 begin
 {$IFDEF MSWINDOWS}
-  result := gdi_GetBasePath;
+  result := ExtractFilePath(ParamStr(0));
 {$ENDIF}
 {$IFDEF LINUX}
-  result := X11_GetBasePath;
+  result := ExtractFilePath(ParamStr(0));
 {$ENDIF}
 {$IFDEF DARWIN}
   result := Cocoa_GetBasePath;
@@ -1283,10 +1278,10 @@ end;
 function GLPT_GetPrefPath(org: string; app: string): string;
 begin
 {$IFDEF MSWINDOWS}
-  result := gdi_GetPrefPath(org, app);
+  result := GetAppConfigDir(False);
 {$ENDIF}
 {$IFDEF LINUX}
-  result := X11_GetPrefPath(org, app);
+  result := GetAppConfigDir(False);
 {$ENDIF}
 {$IFDEF DARWIN}
   result := Cocoa_GetPrefPath(org, app);
