@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/daar/GLPT.svg?branch=master)](https://travis-ci.org/daar/GLPT)
+[![Build Status](https://travis-ci.org/daar/GLPT.svg?branch=GL-version)](https://travis-ci.org/daar/GLPT)
 
 # GLPT :: OpenGL Pascal Toolkit
 
