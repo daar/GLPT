@@ -47,6 +47,7 @@ var
   bgcolor: integer;
   sometext: string;
   genid: integer;
+  sync: boolean;
 
   { UIStateType }
 
@@ -418,7 +419,11 @@ var
 
       GLPT_SetCursor(curs);
     end;
-    button(GEN_ID, 150, 50);
+    if button(GEN_ID, 150, 50) = 1 then
+    begin
+      GLPT_SetVSync(sync);
+      sync := not sync;
+    end;
 
     if button(GEN_ID, 50, 150) = 1 then
       bgcolor := Round(Random * $ffffff);

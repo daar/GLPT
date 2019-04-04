@@ -517,3 +517,14 @@ begin
 
   SetCursor(LoadCursor(h_Instance, g_Cursor));
 end;
+
+procedure gdi_SetVSync(sync: boolean);
+begin
+  Load_WGL_EXT_swap_control;
+
+  if  wglSwapIntervalEXT <> nil then
+    if sync then
+      wglSwapIntervalEXT(1)
+    else
+      wglSwapIntervalEXT(0);
+end;

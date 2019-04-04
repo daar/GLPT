@@ -854,12 +854,19 @@ function GLPT_GetPrefPath (org: string; app: string): string;
   Converts a scancode to human-readable name
   @return name of scancode
 }
-function GLPT_GetScancodeName (scanecode: GLPT_Scancode): string;
+function GLPT_GetScancodeName (scancode: GLPT_Scancode): string;
+
+{
+  Enables or disables vsync
+  @param status: vsync status
+}
+procedure GLPT_SetVSync(sync: boolean);
 
 implementation
 
 uses
-  SysUtils;
+  SysUtils,
+  GL, GLext;
 
 {$i GLPT_Keyboard.inc}
 
@@ -995,6 +1002,7 @@ end;
 
 {$IFDEF MSWINDOWS}
   {$i GLPT_gdi.inc}
+
 {$ENDIF}
 {$IFDEF LINUX}
   {$i GLPT_X11.inc}
@@ -1288,9 +1296,22 @@ begin
 {$ENDIF}
 end;
 
-function GLPT_GetScancodeName (scanecode: GLPT_Scancode): string;
+function GLPT_GetScancodeName (scancode: GLPT_Scancode): string;
 begin
-  result := GLPT_scancode_names[scanecode];
+  result := GLPT_scancode_names[scancode];
+end;
+
+procedure GLPT_SetVSync(sync: boolean);
+begin
+{$IFDEF MSWINDOWS}
+  gdi_SetVSync(sync);
+{$ENDIF}
+{$IFDEF LINUX}
+  //X11_SetVSync(sync);
+{$ENDIF}
+{$IFDEF DARWIN}
+  //Cocoa_SetVSync(sync);
+{$ENDIF}
 end;
 
 end.
