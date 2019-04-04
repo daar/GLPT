@@ -22,7 +22,7 @@ before_install:
         export PATH="$PATH":"$PWD/fpc/bin/i386-win32/";
       fi
 
-install:
+script:
  - fpc GLPT.pas 
 
 notifications:
