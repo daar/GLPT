@@ -1,24 +1,29 @@
-language: generic
-sudo: required
-dist: trusty
+language: c
+sudo: true
+dist: xenial
 
 os:
   - linux
   - osx
+  - windows
+
+before_install:
+    - if [[ $TRAVIS_OS_NAME == osx ]]; then
+        brew update > /dev/null;
+        brew install fpc > /dev/null;
+      elif [[ $TRAVIS_OS_NAME == linux ]]; then
+        sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) universe";
+        sudo apt-get update;
+        sudo apt -q install fpc;
+      else
+        wget -q ftp://ftp.freepascal.org/pub/fpc/snapshot/v33/i386-win32/fpc-3.3.1.i386-win32.zip;
+        mkdir fpc;
+        unzip -q -d fpc fpc-3.3.1.i386-win32.zip;
+        export PATH="$PATH":"$PWD/fpc/bin/i386-win32/";
+      fi
 
 install:
-  - echo $TRAVIS_OS_NAME
-  
-  - if [ ${TRAVIS_OS_NAME} == "linux" ]; then 
-        sudo apt-get update -qq;
-        sudo apt-get install -qq -y fpc; 
-    else
-        brew install fpc caskroom/cask/brew-cask;
-        brew cask install fpcsrc; 
-    fi
-  
-script:
-  - fpc GLPT.pas 
+ - fpc GLPT.pas 
 
 notifications:
   email:
