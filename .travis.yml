@@ -23,7 +23,7 @@ before_install:
       fi
 
 script:
- - fpc GLPT.pas 
+ - fpc -vtu GLPT.pas 
 
 notifications:
   email:
