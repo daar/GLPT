@@ -4,8 +4,12 @@
 
 An easy to use native pascal toolkit that allows to create and manage OpenGL contexts in a platform independent way. GLPT is available under the [MIT license](https://en.wikipedia.org/wiki/MIT_License).
 
-![alt text](https://github.com/daar/GLPT/blob/master/image/simple.png "GLPT in action on Windows")
-![alt text](https://github.com/daar/GLPT/blob/master/image/linux.png "GLPT in action on Linux")
+Some screenshots on different platforms. 
+
+<a href="image/simple.png"><img src="https://github.com/daar/GLPT/blob/master/image/simple.png" align="left" height="128" ></a>
+<a href="image/linux.png"><img src="https://github.com/daar/GLPT/blob/master/image/linux.png" align="left" height="128" ></a>
+<br><br><br><br><br><br>
+Feel free to submit new screenshots by creating a pull request.
 
 ## Usage
 Using GLPT is easy, you only need to include the GLPT unit and create a window. Then run the event loop and do all your application stuff there. There are numerous examples included to help you to make a jump start.
