@@ -18,7 +18,7 @@ before_install:
       else
         wget -q ftp://ftp.freepascal.org/pub/fpc/snapshot/v30/i386-win32/fpc-3.0.5.i386-win32.zip;
         mkdir fpc;
-        unzip -q -d fpc fpc-3.3.1.i386-win32.zip;
+        unzip -q -d fpc fpc-3.0.5.i386-win32.zip;
         export PATH="$PATH":"$PWD/fpc/bin/i386-win32/";
       fi
 
