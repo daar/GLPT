@@ -1,0 +1,16 @@
+{$define FRAMEWORK_LOADED_IOKIT}
+{$include IOTypes.inc}
+{$include IOReturn.inc}
+{$include IOHIDKeys.inc}
+{$include IOHIDBase.inc}
+{$include IOHIDLib.inc}
+{$include IOHIDTransaction.inc}
+{$include IOHIDDevice.inc}
+{$include IOHIDLibObsolete.inc}
+{$include IOHIDUsageTables.inc}
+{$include IOHIDDevicePlugIn.inc}
+{$include IOHIDManager.inc}
+{$include IOHIDValue.inc}
+{$include IOHIDElement.inc}
+{$include IOHIDProperties.inc}
+{$include IOHIDQueue.inc}

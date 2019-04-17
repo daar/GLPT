@@ -74,6 +74,93 @@ WIN_UpdateKeymap()
 
 *)
 
+function gdi_CreateSemaphore(sem: pGLPT_Semaphore; initial_value: integer): boolean;
+begin
+end;
+
+procedure gdi_DestroySemaphore(sem: pGLPT_Semaphore);
+begin
+end;
+
+function gdi_SemaphoreTryWait(sem: pGLPT_Semaphore): integer;
+begin
+end;
+
+function gdi_SemaphoreWait(sem: pGLPT_Semaphore): integer;
+end;
+
+function gdi_SemaphoreWaitTimeout(sem: pGLPT_Semaphore; timeout: longint): integer;
+begin
+end;
+
+function gdi_SemaphoreValue(sem: pGLPT_Semaphore): integer;
+begin
+end;
+
+function gdi_SemaphorePost(sem: pGLPT_Semaphore): integer;
+begin
+end;
+
+function gdi_ConditionWait(condition: pGLPT_Condition; mutex: pGLPT_Mutex): integer;
+begin
+end;
+
+function gdi_ConditionWaitTimeout(condition: pGLPT_Condition; mutex: pGLPT_Mutex; ms: longint): integer;
+begin
+end;
+
+function gdi_ConditionBroadcast(condition: pGLPT_Condition): integer;
+begin
+end;
+
+function gdi_ConditionSignal(condition: pGLPT_Condition): integer;
+begin
+end;
+
+procedure gdi_DestroyCondition(condition: pGLPT_Condition);
+begin
+end;
+
+function gdi_CreateCondition(condition: pGLPT_Condition): boolean;
+begin
+end;
+
+function gdi_LockMutex(mutex: pGLPT_Mutex): integer;
+begin
+end;
+
+function gdi_UnlockMutex(mutex: pGLPT_Mutex): integer;
+begin
+end;
+
+function gdi_TryLockMutex(mutex: pGLPT_Mutex): integer;
+begin
+end;
+
+procedure gdi_DestroyMutex(mutex: pGLPT_Mutex);
+begin
+end;
+
+function gdi_CreateMutex(mutex: pGLPT_Mutex): boolean;
+begin
+end;
+
+function gdi_ThreadID: GLPT_Thread_ID;
+begin
+end;
+
+procedure gdi_DetachThread(thread: pGLPT_Thread);
+begin
+end;
+
+procedure gdi_WaitThread(thread: pGLPT_Thread);
+begin
+end;
+
+function gdi_CreateThread(thread: pGLPT_Thread): boolean;
+begin
+end;
+
 var
   wc: Windows.TWNDCLASS;
   h_Instance: HINST;

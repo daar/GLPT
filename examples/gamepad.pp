@@ -15,26 +15,6 @@ var
   lastTime: double;
   rotate: double;
 
-  procedure write_FPS;
-  var
-    currentTime: double;
-    fps: string;
-  begin
-    // measure FPS
-    currentTime := GLPT_GetTime;
-    inc(nbFrames);
-
-    if currentTime - lastTime >= 1 then
-    begin
-      fps := format('[FPS: %3.0f]', [nbFrames / (currentTime - lastTime)]);
-
-      writeln(GLPT_GetTime:0:3, ' ', fps, ' ticks: ', GLPT_GetTicks);
-
-      nbFrames := 0;
-      lastTime := GLPT_GetTime;
-    end;
-  end;
-
   procedure error_callback(error: integer; description: string);
   begin
     writeln(stderr, description);
@@ -59,7 +39,7 @@ var
 begin
   GLPT_SetErrorCallback(@error_callback);
 
-  if not GLPT_Init then
+  if not GLPT_Init([GLPT_FlagGamepad]) then
     halt(-1);
 
   window := GLPT_CreateWindow(GLPT_WINDOW_POS_CENTER, GLPT_WINDOW_POS_CENTER, width, height, 'Simple example', GLPT_GetDefaultContext);
@@ -77,35 +57,10 @@ begin
 
   while not GLPT_WindowShouldClose(window) do
   begin
-    write_FPS;
-
-    glViewport(0, 0, width, height);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity;
-    glOrtho(-ratio, ratio, -1, 1, 1, -1);
-    glMatrixMode(GL_MODELVIEW);
-
-    glLoadIdentity;
-    rotate := (GLPT_GetTime * 50);
-    rotate := rotate - int(rotate / 360) * 360;
-    glRotatef(rotate, 0, 0, 1);
-
-    glBegin(GL_TRIANGLES);
-      glColor3f(1, 0, 0);
-      glVertex3f(-0.6, -0.4, 0);
-      glColor3f(0, 1, 0);
-      glVertex3f(0.6, -0.4, 0);
-      glColor3f(0, 0, 1);
-      glVertex3f(0, 0.6, 0);
-    glEnd;
-
     GLPT_SwapBuffers(window);
     GLPT_PollEvents;
   end;
 
   GLPT_DestroyWindow(window);
-
   GLPT_Terminate;
 end.

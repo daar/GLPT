@@ -348,6 +348,7 @@ type
 
 function Cocoa_GetKeyboardShiftState: TShiftState; forward;
 function Cocoa_GetTime: double; forward;
+procedure Cocoa_PollDevices; forward;
 
 procedure TCocoaApp.poll;
 var
@@ -357,8 +358,10 @@ var
   pool: NSAutoreleasePool;
   keymap: GLPTKeymapArrayPtr;
 begin
+  Cocoa_PollDevices;
+
   pool := NSAutoreleasePool.alloc.init;
-  event := nextEventMatchingMask_untilDate_inMode_dequeue(NSAnyEventMask, {NSDate.distantPast}nil, NSDefaultRunLoopMode, true);
+  event := nextEventMatchingMask_untilDate_inMode_dequeue(NSAnyEventMask, nil, NSDefaultRunLoopMode, true);
   if event <> nil then
     begin
       //writeln(event.description.utf8string);
@@ -369,16 +372,16 @@ begin
       case event.type_ of
         NSMouseMoved:
           begin
-            params.mouse.x := trunc(event.locationInWindow.x);
-            params.mouse.y := trunc(event.locationInWindow.y);
+            params.mouse.x := Trunc(event.locationInWindow.x);
+            params.mouse.y := Trunc(event.locationInWindow.y);
             params.mouse.shiftstate := Cocoa_GetKeyboardShiftState;
             params.mouse.timestamp := Cocoa_GetTime;
             glptPostMessage(win, GLPT_MESSAGE_MOUSEMOVE, params);
           end;
         NSLeftMouseDown, NSRightMouseDown:
           begin
-            params.mouse.x := trunc(event.locationInWindow.x);
-            params.mouse.y := trunc(event.locationInWindow.y);
+            params.mouse.x := Trunc(event.locationInWindow.x);
+            params.mouse.y := Trunc(event.locationInWindow.y);
             params.mouse.shiftstate := Cocoa_GetKeyboardShiftState;
             params.mouse.timestamp := Cocoa_GetTime;
             case event.type_ of
@@ -391,8 +394,8 @@ begin
           end;
         NSLeftMouseUp, NSRightMouseUp:
           begin
-            params.mouse.x := trunc(event.locationInWindow.x);
-            params.mouse.y := trunc(event.locationInWindow.y);
+            params.mouse.x := Trunc(event.locationInWindow.x);
+            params.mouse.y := Trunc(event.locationInWindow.y);
             params.mouse.shiftstate := Cocoa_GetKeyboardShiftState;
             params.mouse.timestamp := Cocoa_GetTime;
             case event.type_ of
@@ -442,14 +445,18 @@ type
   TOpenGLView = objcclass (NSView)
     public
       function initWithFrame(frameRect: NSRect): id; override;
-      function isOpaque: Boolean; override;
+      function isOpaque: boolean; override;
     private
       openGLContext: NSOpenGLContext;
       trackingArea: NSTrackingArea;
+      displayLink: CVDisplayLinkRef;
+      displayLinkSemaphore: pGLPT_Semaphore;
 
       function defaultPixelFormat: NSOpenGLPixelFormat; message 'defaultPixelFormat';
       function windowRef: pGLPTwindow; message 'windowRef';
+      function glptContext: GLPT_Context; message 'glptContext';
 
+      procedure setupContext; message 'setupContext';
       procedure viewDidMoveToWindow; override;
       procedure mouseEntered(theEvent: NSEvent); override;
       procedure mouseExited(theEvent: NSEvent); override;
@@ -460,6 +467,7 @@ type
       procedure frameChanged (sender: NSNotification); message 'frameChanged:';
       procedure drawRect(dirtyRect: NSRect); override;
       procedure reshape; message 'reshape';
+      procedure dealloc; override;
   end;
 
 // note: setValues_forParameter in RTL headers is parsed wrong
@@ -505,26 +513,51 @@ begin
   glptPostMessage(windowRef, GLPT_MESSAGE_MOUSEEXIT, params);   
 end;
 
-procedure TOpenGLView.viewDidMoveToWindow;
+function DisplayLinkOutputCallback (displayLink: CVDisplayLinkRef; inNow: CVTimeStampPtr; inOutputTime: CVTimeStampPtr; flagsIn: CVOptionFlags; var flagsOut: CVOptionFlags; displayLinkContext: pointer): CVReturn; cdecl;
 var
-  swapInterval: integer = 1;
+  view: TOpenGLView absolute displayLinkContext;
+begin 
+  GLPT_SemaphorePost(view.displayLinkSemaphore);
+  result := 0;
+end;
+
+function TOpenGLView.glptContext: GLPT_Context;
+begin
+  result := TCocoaWindow(window).ref^.context;
+end;
+
+procedure TOpenGLView.setupContext;
+var
+  swapInterval: longint = 1;
   opacity: integer = 0;
+  pixelFormat: NSOpenGLPixelFormat;
+begin
+  pixelFormat := defaultPixelFormat;
+  openGLContext := NSOpenGLContext.alloc.initWithFormat_shareContext(pixelFormat, nil);
+  if openGLContext = nil then
+    GLPTError(GLPT_ERROR_PLATFORM, 'invalid NSOpenGLContext');
+  openGLContext.makeCurrentContext;
+  openGLContext.setView(self);
+
+  // enable vsync
+  if glptContext.vsync then
+    begin
+      displayLinkSemaphore := GLPT_CreateSemaphore(0);
+      CVDisplayLinkCreateWithActiveCGDisplays(displayLink);
+      CVDisplayLinkSetOutputCallback(displayLink, CVDisplayLinkOutputCallback(@DisplayLinkOutputCallback), self);
+      CVDisplayLinkSetCurrentCGDisplayFromOpenGLContext(displayLink, openGLContext.CGLContextObj, pixelFormat.CGLPixelFormatObj);
+      CVDisplayLinkStart(displayLink);
+    end;
+
+  if not isOpaque then
+    openGLContext.setValues_forParameter_fixed(@opacity, NSOpenGLCPSurfaceOpacity);
+end;
+
+procedure TOpenGLView.viewDidMoveToWindow;
 begin
   inherited viewDidMoveToWindow;
-  
   if openGLContext = nil then
-    begin
-      openGLContext := NSOpenGLContext.alloc.initWithFormat_shareContext(defaultPixelFormat, nil);
-      if openGLContext = nil then
-        glptError(GLPT_ERROR_PLATFORM, 'invalid NSOpenGLContext');
-      openGLContext.makeCurrentContext;
-      openGLContext.setView(self);
-
-      openGLContext.setValues_forParameter_fixed(@swapInterval, NSOpenGLCPSwapInterval);
-
-      if not isOpaque then
-        openGLContext.setValues_forParameter_fixed(@opacity, NSOpenGLCPSurfaceOpacity);
-    end;
+    setupContext;
   if window = nil then
     openGLContext.clearDrawable;
 end;
@@ -550,13 +583,13 @@ begin
     begin
       params.rect.top := 0;
       params.rect.left := 0;
-      params.rect.width  := trunc(bounds.size.width);
-      params.rect.height := trunc(bounds.size.height);
+      params.rect.width  := Trunc(bounds.size.width);
+      params.rect.height := Trunc(bounds.size.height);
       glptPostMessage(windowRef, GLPT_MESSAGE_RESIZE, params);      
     end;
 end;
 
-function TOpenGLView.isOpaque: Boolean;
+function TOpenGLView.isOpaque: boolean;
 begin
   // return false to make the view transparent
   result := window.backgroundColor.alphaComponent > 0;
@@ -568,6 +601,7 @@ begin
   i += 1;
   result := i;
 end;
+
 const
   NSOpenGLPFAOpenGLProfile = 99 { available in 10_7 };
 const
@@ -575,11 +609,11 @@ const
   NSOpenGLProfileVersion3_2Core = $3200 { available in 10_7 };
   NSOpenGLProfileVersion4_1Core = $4100 { available in 10_10 };
 var
-  attributes: array[0..4] of NSOpenGLPixelFormatAttribute;
+  attributes: array[0..32] of NSOpenGLPixelFormatAttribute;
   i: integer = -1;
   context: GLPT_Context;
 begin
-  context := TCocoaWindow(window).ref^.context;
+  context := glptContext;
 
   // note: implement this?
   //if (_this->gl_config.accelerated >= 0) {
@@ -593,14 +627,18 @@ begin
 
   if context.doubleBuffer then
     attributes[Inc(i)] := NSOpenGLPFADoubleBuffer;
+
   attributes[Inc(i)] := NSOpenGLPFAColorSize;
   attributes[Inc(i)] := context.colorSize;
+
   attributes[Inc(i)] := NSOpenGLPFADepthSize;
   attributes[Inc(i)] := context.depthSize;
+
   attributes[Inc(i)] := NSOpenGLPFAStencilSize;
   attributes[Inc(i)] := context.stencilSize;
+
+  // we can only specify "legacy" or "core" on mac and the system will decide what version we actually get
   attributes[Inc(i)] := NSOpenGLPFAOpenGLProfile;
-  // note: we can only specify "legacy" or "core" on mac and the system will decide what version we actually get
   if context.profile = GLPT_CONTEXT_PROFILE_LEGACY then
     attributes[Inc(i)] := NSOpenGLProfileVersionLegacy
   else if context.profile = GLPT_CONTEXT_PROFILE_CORE then
@@ -614,11 +652,23 @@ begin
     end
   else
     glptError(GLPT_ERROR_PLATFORM, 'invalid context profile');
+
+  // terminate with 0
   attributes[Inc(i)] := 0;
 
   result := NSOpenGLPixelFormat.alloc.initWithAttributes(@attributes).autorelease;
   if result = nil then
     glptError(GLPT_ERROR_PLATFORM, 'invalid NSOpenGLPixelFormat');
+end;
+
+procedure TOpenGLView.dealloc;
+begin
+  if displayLink <> nil then
+    CVDisplayLinkRelease(displayLink);
+  if displayLinkSemaphore <> nil then
+    GLPT_DestroySemaphore(displayLinkSemaphore);
+
+  inherited dealloc;
 end;
 
 function TOpenGLView.initWithFrame(frameRect: NSRect): id;
@@ -629,8 +679,246 @@ begin
 end;
 
 {=============================================}
+{@! ___THREADS___ } 
+{=============================================}
+
+function Cocoa_CreateSemaphore(sem: pGLPT_Semaphore; initial_value: integer): boolean;
+begin
+  // sem_init doesn't exist on macOS so we need to rely on named semaphores
+  sem^.name := HexStr(sem)+#0;
+  sem^.handle := sem_open(@sem^.name[1], O_CREAT, 0644, initial_value);
+  if sem^.handle = nil then
+    begin
+      GLPTError(GLPT_ERROR_THREADS, 'sem_open() failed '+IntToStr(fpGetErrno));
+      result := false;
+    end
+  else
+    result := true;
+end;
+
+procedure Cocoa_DestroySemaphore(sem: pGLPT_Semaphore);
+begin
+  if sem_close(sem^.handle) <> 0 then
+    GLPTError(GLPT_ERROR_THREADS, 'sem_close() failed.');
+  if sem_unlink(@sem^.name[1]) <> 0 then
+    GLPTError(GLPT_ERROR_THREADS, 'sem_unlink() failed.');
+end;
+
+function Cocoa_SemaphoreTryWait(sem: pGLPT_Semaphore): integer;
+begin
+  if sem_trywait(sem^.handle) = 0 then
+    result := 0
+  else
+    result := GLPT_ERROR_MUTEX_TIMEDOUT;
+end;
+
+function Cocoa_SemaphoreWait(sem: pGLPT_Semaphore): integer;
+begin
+  result := sem_wait(sem^.handle);
+  if result < 0 then
+    result := GLPTError(GLPT_ERROR_THREADS, 'sem_wait() failed '+IntToStr(fpGetErrno));
+end;
+
+function Cocoa_SemaphoreWaitTimeout(sem: pGLPT_Semaphore; timeout: longint): integer;
+var
+  endTime: longint;
+begin
+  // sem_timedwait is not implemented for macOS
+  endTime := GLPT_GetTicks + timeout;
+  while GLPT_SemaphoreTryWait(sem) = GLPT_ERROR_MUTEX_TIMEDOUT do
+    begin
+      if GLPT_GetTicks - endTime <= 0 then
+        break;
+      GLPT_Delay(1);
+    end;
+end;
+
+function Cocoa_SemaphoreValue(sem: pGLPT_Semaphore): integer;
+begin
+  result := -1;
+  GLPTError(GLPT_ERROR_THREADS, 'Cocoa_SemValue() is not implemented.');
+  // TODO: sem_getvalue not implemented in macOS! we need to make a whole new semaphore
+  // implemention for this to work. see /generic/SDL_syssem.c for example
+  //sem_getvalue(@sem^.handle, @result);
+  //if result < 0 then
+  //  result := 0;
+end;
+
+function Cocoa_SemaphorePost(sem: pGLPT_Semaphore): integer;
+begin
+  result := sem_post(sem^.handle);
+  if result < 0 then
+    GLPTError(GLPT_ERROR_THREADS, 'sem_post() failed '+IntToStr(fpGetErrno));
+end;
+
+
+function Cocoa_ConditionWait(condition: pGLPT_Condition; mutex: pGLPT_Mutex): integer;
+begin
+  if pthread_cond_wait(@condition^.handle, @mutex^.handle) <> 0 then
+    result := GLPTError(GLPT_ERROR_THREADS, 'pthread_cond_wait() failed')
+  else
+    result := 0;
+end;
+
+function GetTimeoutTime (ms: longint): timespec;
+var
+  time: timeval;
+begin
+  fpGetTimeOfDay(@time,nil);
+  result.tv_sec := time.tv_sec + (ms div 1000);
+  result.tv_nsec := (time.tv_usec + (ms mod 1000) * 1000) * 1000;
+  if result.tv_nsec > 1000000000 then
+    begin
+      result.tv_sec += 1;
+      result.tv_nsec -= 1000000000;
+    end;
+end;
+
+function Cocoa_ConditionWaitTimeout(condition: pGLPT_Condition; mutex: pGLPT_Mutex; ms: longint): integer;
+var
+  ts_timeout: timespec;
+label
+  TryAgain;
+begin
+  ts_timeout := GetTimeoutTime(ms);
+  TryAgain:
+  result := pthread_cond_timedwait(@condition^.handle, @mutex^.handle, @ts_timeout);
+  case result of
+    ESysEINTR:
+      goto TryAgain;
+    EsysETIMEDOUT:
+      result := GLPT_ERROR_MUTEX_TIMEDOUT;
+    otherwise
+      result := GLPTError(GLPT_ERROR_THREADS, 'pthread_cond_timedwait() failed');
+  end;
+end;
+
+function Cocoa_ConditionBroadcast(condition: pGLPT_Condition): integer;
+begin
+  if pthread_cond_broadcast(@condition^.handle) <> 0 then
+    result := GLPTError(GLPT_ERROR_THREADS, 'pthread_cond_broadcast() failed')
+  else
+    result := 0;
+end;
+
+function Cocoa_ConditionSignal(condition: pGLPT_Condition): integer;
+begin
+  if pthread_cond_signal(@condition^.handle) <> 0 then
+    result := GLPTError(GLPT_ERROR_THREADS, 'pthread_cond_signal() failed')
+  else
+    result := 0;
+end;
+
+procedure Cocoa_DestroyCondition(condition: pGLPT_Condition);
+begin
+  pthread_cond_destroy(@condition^.handle);
+end;
+
+function Cocoa_CreateCondition(condition: pGLPT_Condition): boolean;
+begin
+  if pthread_cond_init(@condition^.handle, nil) < 0 then
+    begin
+      GLPTError(GLPT_ERROR_THREADS, 'pthread_cond_init() failed');
+      result := false;
+    end
+  else
+    result := true;
+end;
+
+function Cocoa_LockMutex(mutex: pGLPT_Mutex): integer;
+begin
+  result := pthread_mutex_lock(@mutex^.handle);
+  if result < 0 then
+    result := GLPTError(GLPT_ERROR_THREADS, 'pthread_mutex_lock() failed');
+end;
+
+function Cocoa_UnlockMutex(mutex: pGLPT_Mutex): integer;
+begin
+  result := pthread_mutex_unlock(@mutex^.handle);
+  if result < 0 then
+    result := GLPTError(GLPT_ERROR_THREADS, 'pthread_mutex_unlock() failed');
+end;
+
+function Cocoa_TryLockMutex(mutex: pGLPT_Mutex): integer;
+begin
+  result := pthread_mutex_trylock(@mutex^.handle);
+  if result <> 0 then
+    begin
+      if fpGetErrno = ESysEBUSY then
+        result := GLPT_ERROR_MUTEX_TIMEDOUT
+      else
+        result := GLPTError(GLPT_ERROR_THREADS, 'pthread_mutex_trylock() failed');
+    end;
+end;
+
+procedure Cocoa_DestroyMutex(mutex: pGLPT_Mutex);
+begin
+  pthread_mutex_destroy(@mutex^.handle);
+end;
+
+function Cocoa_CreateMutex(mutex: pGLPT_Mutex): boolean;
+var
+  attr: pthread_mutexattr_t;
+begin
+  pthread_mutexattr_init(@attr);
+  // GLPT mutexes can be nested
+  pthread_mutexattr_settype(@attr, PTHREAD_MUTEX_RECURSIVE);
+  if pthread_mutex_init(@mutex^.handle, @attr) <> 0 then
+    begin
+      GLPTError(GLPT_ERROR_THREADS, 'pthread_mutex_init() failed');
+      result := false;
+    end
+  else
+    result := true;
+end;
+
+function Cocoa_ThreadID: GLPT_Thread_ID;
+begin
+  result := GLPT_Thread_ID(pthread_self);
+end;
+
+procedure Cocoa_DetachThread(thread: pGLPT_Thread);
+begin
+  pthread_detach(thread^.handle);
+end;
+
+procedure Cocoa_WaitThread(thread: pGLPT_Thread);
+begin
+  pthread_join(thread^.handle, nil);
+end;
+
+function Cocoa_CreateThread(thread: pGLPT_Thread): boolean;
+var
+  attr: pthread_attr_t;
+begin
+  if pthread_attr_init(@attr) <> 0 then
+    GLPTError(GLPT_ERROR_THREADS, 'Couldn''t initialize pthread attributes');
+
+  pthread_attr_setdetachstate(@attr, PTHREAD_CREATE_JOINABLE);
+  pthread_attr_setstacksize(@attr, thread^.stacksize);
+
+  if pthread_create(@thread^.handle, @attr, __startroutine_t(@GLPT_RunThread), thread) <> 0 then
+    begin
+      GLPTError(GLPT_ERROR_THREADS, 'Not enough resources to create thread');
+      result := false;
+    end
+  else
+    result := true;
+end;
+
+{=============================================}
 {@! ___GLPT___ } 
 {=============================================}
+
+procedure Cocoa_Delay(ms: longint);
+begin
+  NSThread.sleepForTimeInterval(ms/1000);
+end;
+
+procedure Cocoa_Delay(ms: double);
+begin
+  NSThread.sleepForTimeInterval(ms);
+end;
 
 function Cocoa_GetTime: double;
 begin
@@ -666,7 +954,6 @@ var
   flags: longint;
 begin
   flags := win^.flags;
-
   if flags = GLPT_WINDOW_DEFAULT then
     begin
       windowFlags := NSTitledWindowMask + NSClosableWindowMask + NSMiniaturizableWindowMask + NSResizableWindowMask;
@@ -727,21 +1014,27 @@ begin
   exit(True);
 end;
 
+
 procedure Cocoa_SwapBuffers(win: pGLPTwindow);
+var
+  view: TOpenGLView;
 begin
-  win^.ref.contentView.display;
+  view := TOpenGLView(win^.ref.contentView);
+  if assigned(view.displayLinkSemaphore) then
+    GLPT_SemaphoreWait(view.displayLinkSemaphore);
+  // note: on 10.14 NSView.display was giving a black screen
+  // https://stackoverflow.com/questions/52938516/opengl-not-rendering-on-macos-mojave
+  win^.ref.contentView.setNeedsDisplay_(true);
 end;
 
 procedure Cocoa_GetFrameBufferSize(win: pGLPTwindow; out width, height: integer);
 begin
-  width:= trunc(win^.ref.contentView.bounds.size.width);
-  height:= trunc(win^.ref.contentView.bounds.size.height);
+  width:= Trunc(win^.ref.contentView.bounds.size.width);
+  height:= Trunc(win^.ref.contentView.bounds.size.height);
 end;
 
 procedure Cocoa_PollEvents;
 begin
-  // note: do we really need to call on main thread? isn't the first thread "main"?
-  //TCocoaApp(TCocoaApp.sharedApplication).poll;
   NSApp.performSelectorOnMainThread_withObject_waitUntilDone(objcselector('poll'), nil, true);
 end;
 
@@ -751,10 +1044,10 @@ var
 begin
   screenFrame := NSScreen.mainScreen.frame;
 
-  dr.top := trunc(NSMinY(screenFrame));
-  dr.left := trunc(NSMinX(screenFrame));
-  dr.bottom := trunc(NSMaxY(screenFrame));
-  dr.right := trunc(NSMaxX(screenFrame));
+  dr.top := Trunc(NSMinY(screenFrame));
+  dr.left := Trunc(NSMinX(screenFrame));
+  dr.bottom := Trunc(NSMaxY(screenFrame));
+  dr.right := Trunc(NSMaxX(screenFrame));
 end;
 
 function Cocoa_GetBasePath: string;
@@ -830,12 +1123,372 @@ begin
   AddMenu(windowMenu);
 end;
 
-function Cocoa_Init: boolean;
+// https://stackoverflow.com/questions/2234364/how-to-detect-a-gamepad-button-press-on-osx-10-5-and-higher
+
+type
+  HIDElementInfo = class
+    ref: IOHIDElementRef;
+    cookie: IOHIDElementCookie;
+    usagePage: UInt32;
+    usage: UInt32;
+    min: SInt32;
+    max: SInt32;
+    // TODO: don't know what these are
+    //minReport: cint32;
+    //maxReport: cint32;
+  end;
+  HIDElementInfoList = specialize TFPGObjectList<HIDElementInfo>;
+
+// TODO: this is top level stuff right? we can't use classes though
+// so we need to make a new linked list record I guess?
+// in that case rename these to HIDDeviceInfo
+type
+  HIDDeviceInfo = class
+    name: string;
+    guid: array[0..1] of byte;
+    hidDevice: IOHIDDeviceRef;
+    usagePage: cuint32;
+    usage: cuint32;
+    elements: HIDElementInfoList;
+
+    procedure AfterConstruction; override;
+    destructor Destroy; override;
+  end;
+  HIDDeviceInfoList = specialize TFPGObjectList<HIDDeviceInfo>;
+
+procedure HIDDeviceInfo.AfterConstruction;
+begin
+  elements := HIDElementInfoList.Create;
+end;
+
+destructor HIDDeviceInfo.Destroy;
+begin
+  elements.Free;
+end;
+
+var
+  RegisteredHIDDevices: HIDDeviceInfoList = nil;
+
+function Cocoa_GetHIDDeviceInfo(hidDevice: IOHIDDeviceRef; var info: HIDDeviceInfo): boolean;
+  
+  procedure AddHIDElement(elementRef: IOHIDElementRef; info: HIDDeviceInfo);
+  var
+    usagePage: integer;
+    usage: integer;
+    element: HIDElementInfo;
+  begin
+    usagePage := IOHIDElementGetUsagePage(elementRef);
+    usage := IOHIDElementGetUsage(elementRef);
+    element := nil;
+
+    case IOHIDElementGetType(elementRef) of
+      kIOHIDElementTypeInput_Misc,
+      kIOHIDElementTypeInput_Button,
+      kIOHIDElementTypeInput_Axis:
+        begin
+          case usagePage of
+            kHIDPage_GenericDesktop:
+              begin
+                case usage of
+                  kHIDUsage_GD_X,
+                  kHIDUsage_GD_Y,
+                  kHIDUsage_GD_Z,
+                  kHIDUsage_GD_Rx,
+                  kHIDUsage_GD_Ry,
+                  kHIDUsage_GD_Rz,
+                  kHIDUsage_GD_Slider,
+                  kHIDUsage_GD_Dial,
+                  kHIDUsage_GD_Wheel:
+                    begin
+                      // add axes
+                      writeln('add axis');
+                      element := HIDElementInfo.Create;
+                    end;
+                  kHIDUsage_GD_Hatswitch:
+                    begin
+                      // add hats 
+                      writeln('add hat');
+                      element := HIDElementInfo.Create;
+                    end;
+                  kHIDUsage_GD_DPadUp,
+                  kHIDUsage_GD_DPadDown,
+                  kHIDUsage_GD_DPadRight,
+                  kHIDUsage_GD_DPadLeft,
+                  kHIDUsage_GD_Start,
+                  kHIDUsage_GD_Select:
+                    begin
+                      // add buttons
+                      writeln('add button');
+                      element := HIDElementInfo.Create;
+                    end;
+                end;
+              end;
+            kHIDPage_Simulation:
+              begin
+                case usage of
+                  kHIDUsage_Sim_Rudder,
+                  kHIDUsage_Sim_Throttle:
+                    begin
+                      // add axes
+                      element := HIDElementInfo.Create;
+                    end;
+                end;
+              end;
+            kHIDPage_Button:
+              ;
+            kHIDPage_Consumer:
+              begin
+                
+              end;
+            otherwise
+              ;
+          end;
+        end;
+
+      kIOHIDElementTypeCollection:
+        begin
+          // TODO: recurse into children
+          //CFArrayRef array = IOHIDElementGetChildren(refElement);
+          //if (array) {
+          //    AddHIDElements(array, pDevice);
+          //}
+        end;
+      end;
+
+    // add element to device
+    if assigned(element) then
+      begin
+        element.ref := elementRef;
+        element.usagePage := usagePage;
+        element.usage := usage;
+        element.min := IOHIDElementGetLogicalMin(elementRef);
+        element.max := IOHIDElementGetLogicalMax(elementRef);
+        element.cookie := IOHIDElementGetCookie(elementRef);
+        writeln('  min: ', element.min);
+        writeln('  max: ', element.max);
+
+        info.elements.Add(element);
+      end;
+  end;
+
+var
+  ref: CFTypeRef;
+  elements: CFArrayRef;
+  element: IOHIDElementRef;
+begin
+  info := HIDDeviceInfo.Create;
+
+  ref := IOHIDDeviceGetProperty(hidDevice, CFSTR(kIOHIDPrimaryUsagePageKey));
+  if assigned(ref) then
+    CFNumberGetValue(ref, kCFNumberSInt32Type, @info.usagePage);
+  
+  ref := IOHIDDeviceGetProperty(hidDevice, CFSTR(kIOHIDPrimaryUsageKey));
+  if assigned(ref) then
+    CFNumberGetValue(ref, kCFNumberSInt32Type,@info.usage);
+
+  // TODO: we're only looking for gamepads?
+  if (info.usage <> kHIDUsage_GD_Joystick) and 
+     (info.usage <> kHIDUsage_GD_GamePad) and 
+     (info.usage <> kHIDUsage_GD_MultiAxisController) then
+       begin
+         info.Free;
+         exit(false);
+       end;
+
+  info.hidDevice := hidDevice;
+
+  // get device name
+  ref := IOHIDDeviceGetProperty(hidDevice, CFSTR(kIOHIDProductKey));
+  if not assigned(ref) then
+     ref := IOHIDDeviceGetProperty(hidDevice, CFSTR(kIOHIDManufacturerKey));
+
+  if assigned(ref) then
+    CFStringGetPascalString(ref, @info.name, sizeof(info.name), kCFStringEncodingUTF8)
+  else
+    info.name := 'Unidentified device';
+
+  ref := IOHIDDeviceGetProperty(hidDevice, CFSTR(kIOHIDVendorIDKey));
+  if assigned(ref) then
+    CFNumberGetValue(ref, kCFNumberSInt32Type, @info.guid[0]);
+  
+  ref := IOHIDDeviceGetProperty(hidDevice, CFSTR(kIOHIDProductIDKey));
+  if assigned(ref) then
+    CFNumberGetValue(ref, kCFNumberSInt32Type, @info.guid[1]);
+
+  // TODO: make a final efford to get a proper guid
+  ///* Check to make sure we have a vendor and product ID
+  //   If we don't, use the same algorithm as the Linux code for Bluetooth devices */
+  //guid32 = (Uint32*)pDevice->guid.data;
+  //if (!guid32[0] && !guid32[1]) {
+  //    /* If we don't have a vendor and product ID this is probably a Bluetooth device */
+  //    const Uint16 BUS_BLUETOOTH = 0x05;
+  //    Uint16 *guid16 = (Uint16 *)guid32;
+  //    *guid16++ = BUS_BLUETOOTH;
+  //    *guid16++ = 0;
+  //    SDL_strlcpy((char*)guid16, pDevice->product, sizeof(pDevice->guid.data) - 4);
+  //}
+
+  elements := IOHIDDeviceCopyMatchingElements(hidDevice, nil, kIOHIDOptionsTypeNone);
+  if assigned(elements) then
+    begin
+      for pointer(element) in NSArray(elements) do
+        AddHIDElement(element, info);
+      CFRelease(elements);
+    end;
+
+  result := true;
+end;
+
+procedure Cocoa_GamepadWasAddedCallback(context: pointer; result_: IOReturn; sender: pointer; device: IOHIDDeviceRef); cdecl;
+var
+  info: HIDDeviceInfo;
+begin
+  // TODO: make a message
+  writeln('gamepad added');
+  if Cocoa_GetHIDDeviceInfo(device, info) then
+    begin
+      if RegisteredHIDDevices = nil then
+        RegisteredHIDDevices := HIDDeviceInfoList.Create;
+      RegisteredHIDDevices.Add(info);
+    end;
+end;
+
+procedure Cocoa_GamepadWasRemovedCallback(context: pointer; result_: IOReturn; sender: pointer; device: IOHIDDeviceRef); cdecl;
+var
+  i: integer;
+begin
+  // TODO: make a message
+  writeln('gamepad removed');
+  for i := 0 to RegisteredHIDDevices.Count - 1 do
+    if HIDDeviceInfo(RegisteredHIDDevices[i]).hidDevice = device then
+      begin
+        RegisteredHIDDevices.Delete(i);
+        break;    
+      end;
+end;
+
+procedure Cocoa_GamepadActionCallback(context: pointer; result_: IOReturn; sender: pointer; value: IOHIDValueRef); cdecl;
+var
+  element: IOHIDElementRef;
+  usagePage: integer;
+  usage: integer;
+begin
+  writeln('Cocoa_GamepadActionCallback');
+  element := IOHIDValueGetElement(value);
+  writeln('gamepad value: ', IOHIDValueGetIntegerValue(value));
+
+  usagePage := IOHIDElementGetUsagePage(element);
+  usage := IOHIDElementGetUsage(element);
+
+  writeln('usagePage: ', usagePage);
+  writeln('usage: ', usage);
+  writeln('type: ', IOHIDElementGetType(element));
+end;
+
+procedure Cocoa_PollDevices;
+
+  function GetHIDElementState(device: HIDDeviceInfo; element: HIDElementInfo): SInt32;
+  var
+    valueRef: IOHIDValueRef;
+  begin
+    result := 0;
+    if IOHIDDeviceGetValue(device.hidDevice, element.ref, @valueRef) = kIOReturnSuccess then
+      begin
+        result := IOHIDValueGetIntegerValue(valueRef);
+
+        // TODO: reported min/max values for auto-calibration
+        ///* record min and max for auto calibration */
+        //if (value < pElement->minReport) {
+        //    pElement->minReport = value;
+        //}
+        //if (value > pElement->maxReport) {
+        //    pElement->maxReport = value;
+        //}
+      end
+    else
+      result := 0;
+  end;
+
+var
+  value: SInt32;
+  device: HIDDeviceInfo;
+  element: HIDElementInfo;
+begin
+  if RegisteredHIDDevices = nil then
+    exit;
+
+  //writeln('Cocoa_PollDevices');
+  //for device in RegisteredHIDDevices do
+  //  begin
+  //    for element in device.elements do
+  //      begin
+  //        value := GetHIDElementState(device, element);
+  //        writeln(device.name, ' usagePage: ', element.usagePage, ' usage:', element.usage, ' value = ', value);
+  //      end;
+  //  end;
+  //glptPostMessage(win, GLPT_MESSAGE_MOUSEMOVE, params);
+end;
+
+var
+  HIDManager: IOHIDManagerRef = nil;
+
+function Cocoa_Gamepad_Init: boolean;
+
+  function CreateHIDDeviceMatchDictionary(page: integer; usage: integer): NSMutableDictionary;
+  begin
+    result := NSMutableDictionary.dictionaryWithCapacity(2);
+    result.setObject_forKey(NSNumber.numberWithInt(page), NSSTR(kIOHIDDeviceUsagePageKey));
+    result.setObject_forKey(NSNumber.numberWithInt(usage), NSSTR(kIOHIDDeviceUsageKey));
+  end;
+
+var
+  matches: NSMutableArray;
+  res: IOReturn;
+begin
+  writeln('Cocoa_Gamepad_Init');
+
+  // criteria
+  matches := NSMutableArray.alloc.init;
+  matches.addObject(CreateHIDDeviceMatchDictionary(kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick));
+  matches.addObject(CreateHIDDeviceMatchDictionary(kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad));
+  matches.addObject(CreateHIDDeviceMatchDictionary(kHIDPage_GenericDesktop, kHIDUsage_GD_MultiAxisController));
+  
+  HIDManager := IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
+  if HIDManager = nil then
+    begin
+      glptError(GLPT_ERROR_PLATFORM, 'IOHIDManagerCreate failed.');
+      exit(false);
+    end;
+
+  if IOHIDManagerOpen(HIDManager, kIOHIDOptionsTypeNone) <> kIOReturnSuccess then
+    begin
+      glptError(GLPT_ERROR_PLATFORM, 'IOHIDManagerOpen failed.');
+      exit(false);
+    end;
+
+  IOHIDManagerSetDeviceMatchingMultiple(HIDManager, CFArrayRef(matches));
+  IOHIDManagerRegisterDeviceMatchingCallback(HIDManager, @Cocoa_GamepadWasAddedCallback, nil);
+  IOHIDManagerRegisterDeviceRemovalCallback(HIDManager, @Cocoa_GamepadWasRemovedCallback, nil);
+  IOHIDManagerRegisterInputValueCallback(HIDManager, @Cocoa_GamepadActionCallback, nil);
+
+  IOHIDManagerScheduleWithRunLoop(HIDManager, CFRunLoopGetCurrent, kCFRunLoopDefaultMode);
+
+  result := true;
+  // what is this???
+  //while (CFRunLoopRunInMode(SDL_JOYSTICK_RUNLOOP_MODE,0,TRUE) == kCFRunLoopRunHandledSource) {
+  //    /* no-op. Callback fires once per existing device. */
+  //}
+end;
+
+function Cocoa_Init(flags: GLPT_InitFlags): boolean;
 var
   pool: NSAutoreleasePool;
   app: TCocoaApp;
   delegate: TCocoaAppDelegate;
 begin  
+
+  if (GLPT_FlagGamepad in flags) and not Cocoa_Gamepad_Init then
+    exit(false);
 
   // set mac specific keynames
   GLPT_scancode_names[GLPT_SCANCODE_LALT] := 'Left Option';

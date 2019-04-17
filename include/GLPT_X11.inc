@@ -303,6 +303,93 @@ X11_UpdateKeymap(_THIS)
 
 *)
 
+function X11_CreateSemaphore(sem: pGLPT_Semaphore; initial_value: integer): boolean;
+begin
+end;
+
+procedure X11_DestroySemaphore(sem: pGLPT_Semaphore);
+begin
+end;
+
+function X11_SemaphoreTryWait(sem: pGLPT_Semaphore): integer;
+begin
+end;
+
+function X11_SemaphoreWait(sem: pGLPT_Semaphore): integer;
+end;
+
+function X11_SemaphoreWaitTimeout(sem: pGLPT_Semaphore; timeout: longint): integer;
+begin
+end;
+
+function X11_SemaphoreValue(sem: pGLPT_Semaphore): integer;
+begin
+end;
+
+function X11_SemaphorePost(sem: pGLPT_Semaphore): integer;
+begin
+end;
+
+function X11_ConditionWait(condition: pGLPT_Condition; mutex: pGLPT_Mutex): integer;
+begin
+end;
+
+function X11_ConditionWaitTimeout(condition: pGLPT_Condition; mutex: pGLPT_Mutex; ms: longint): integer;
+begin
+end;
+
+function X11_ConditionBroadcast(condition: pGLPT_Condition): integer;
+begin
+end;
+
+function X11_ConditionSignal(condition: pGLPT_Condition): integer;
+begin
+end;
+
+procedure X11_DestroyCondition(condition: pGLPT_Condition);
+begin
+end;
+
+function X11_CreateCondition(condition: pGLPT_Condition): boolean;
+begin
+end;
+
+function X11_LockMutex(mutex: pGLPT_Mutex): integer;
+begin
+end;
+
+function X11_UnlockMutex(mutex: pGLPT_Mutex): integer;
+begin
+end;
+
+function X11_TryLockMutex(mutex: pGLPT_Mutex): integer;
+begin
+end;
+
+procedure X11_DestroyMutex(mutex: pGLPT_Mutex);
+begin
+end;
+
+function X11_CreateMutex(mutex: pGLPT_Mutex): boolean;
+begin
+end;
+
+function X11_ThreadID: GLPT_Thread_ID;
+begin
+end;
+
+procedure X11_DetachThread(thread: pGLPT_Thread);
+begin
+end;
+
+procedure X11_WaitThread(thread: pGLPT_Thread);
+begin
+end;
+
+function X11_CreateThread(thread: pGLPT_Thread): boolean;
+begin
+end;
+
 function X11_GetTime: double;
 var
   now: timespec;

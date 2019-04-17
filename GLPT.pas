@@ -25,12 +25,14 @@ unit GLPT;
 {$mode objfpc}
 
 {$IFDEF DARWIN}
-  {$modeswitch objectivec1}
+  {$modeswitch objectivec2}
+  {$linkframework CoreVideo}
 {$ENDIF}
 
 interface
 
 uses
+  CTypes,
 {$IFDEF MSWINDOWS}
   Windows;
 {$ENDIF}
@@ -38,9 +40,9 @@ uses
   Linux, UnixType, X, Xlib, xutil, GLX;
 {$ENDIF}
 {$IFDEF DARWIN}
-  CocoaAll;
+  FGL, SysUtils, BaseUnix, Unix, 
+  IOKit, MacOSAll, CocoaAll;
 {$ENDIF}
-
 
 const
   //OpenGL Pascal Toolkit version
@@ -589,6 +591,14 @@ const
 
   GLPT_WINDOW_POS_CENTER = -MaxInt;
 
+  // errors
+  GLPT_ERROR_NONE = 1;
+  GLPT_ERROR_PLATFORM = 2;
+  GLPT_ERROR_THREADS = 3;
+  GLPT_ERROR_UNKNOWN = 255;
+
+  GLPT_ERROR_MUTEX_TIMEDOUT = 256;
+
 type
   { Types used by standard events }
   TShiftStateEnum = (ssShift, ssAlt, ssCtrl,
@@ -607,7 +617,7 @@ type
   pGLPT_MessageRec = ^GLPT_MessageRec;
 
   GLPT_EventCallback = procedure(msg: pGLPT_MessageRec);
-  GLPT_ErrorCallback = procedure(const error: integer; const description: string);
+  GLPT_ErrorCallback = procedure(error: integer; description: string);
 
   GLPT_DisplayMode = packed record
     format: integer;               { pixel format }
@@ -624,6 +634,7 @@ type
     minorVersion: byte;
     profile: byte;
     stencilSize: byte;
+    vsync: boolean;
   end;
 
   pGLPTwindow = ^GLPTwindow;
@@ -656,7 +667,7 @@ type
 {$ENDIF}
 {$IFDEF DARWIN}
     ref: NSWindow;
-    GLcontext: NSOpenGLContext
+    GLcontext: NSOpenGLContext;
 {$ENDIF}
   end;
 
@@ -673,6 +684,24 @@ type
     keycode: GLPT_Keycode;     
     scancode: GLPT_Scancode;
     shiftstate: TShiftState;   //< shift state of the keyboard
+  end;
+
+  GLPT_MsgParmControllerAxis = record
+    which: SInt16;
+    axis: UInt8;
+    value: SInt16;
+  end;
+
+  GLPT_MsgParmControllerHat = record
+    which: SInt16;
+    hat: Uint8;
+    value: SInt16;
+  end;
+
+  GLPT_MsgParmControllerButton = record
+    which: UInt32;
+    button: Uint8;
+    state: Uint8;
   end;
 
   GLPT_MsgParmUser = record
@@ -713,6 +742,15 @@ type
     bottom: longint;   //< bottom position of rectangle
   end;
 
+  // TODO: fix these names
+  GLPT_InitFlagsEnum = (
+                      GLPT_FlagGamepad
+                    );
+  GLPT_InitFlags = set of GLPT_InitFlagsEnum;
+
+const
+  GLPT_InitFlagsAll = [GLPT_FlagGamepad];
+
 {
    This function returns the GLPT version as string.
    @return the GLPT version
@@ -739,10 +777,16 @@ function GLPT_GetTime: double;
 function GLPT_GetTicks: longint;
 
 {
+  Sleeps for specified number of seconds
+  @param ms: number of milliseconds to sleep
+}
+procedure GLPT_Delay(ms: longint);
+
+{
    Initializes the GLPT library
    @return True if successfull otherwise False
 }
-function GLPT_Init: boolean;
+function GLPT_Init (flags: GLPT_InitFlags = GLPT_InitFlagsAll): boolean;
 
 {
    Terminates the GLPT library
@@ -856,14 +900,18 @@ function GLPT_GetPrefPath (org: string; app: string): string;
 }
 function GLPT_GetScancodeName (scanecode: GLPT_Scancode): string;
 
+{$IFDEF DARWIN}
+{$i include/darwin/ptypes.inc}
+{$i include/darwin/pthread.inc}
+{$i include/darwin/errno.inc}
+{$ENDIF}
+
+{$i include/GLPT_Threads.inc}
+
 implementation
 
-{$i GLPT_Keyboard.inc}
-
-const
-  GLPT_ERROR_NONE = 1;
-  GLPT_ERROR_PLATFORM = 2;
-  GLPT_ERROR_UNKNOWN = 255;
+{$i include/GLPT_Keyboard.inc}
+{$i include/GLPT_Controller.inc}
 
 type
   pLink = ^Link;
@@ -896,13 +944,14 @@ var
 
 //***  Error handling  *************************************************************************************************
 
-procedure glptError(const error: integer; const msg: string);
+function glptError(const error: integer; const msg: string): integer;
 var
   errmsg: string;
 begin
   case error of
     GLPT_ERROR_NONE: errmsg := 'GLPT_ERROR_NONE : ' + msg;
     GLPT_ERROR_PLATFORM: errmsg := 'GLPT_ERROR_PLATFORM : ' + msg;
+    GLPT_ERROR_THREADS: errmsg := 'GLPT_ERROR_THREADS : ' + msg;
     GLPT_ERROR_UNKNOWN: errmsg := 'GLPT_ERROR_UNKNOWN : ' + msg;
     else
       errmsg := 'GLPT_ERROR_UNKNOWN : ' + msg;
@@ -914,6 +963,8 @@ begin
 
   if assigned(errfunc) then
     errfunc(error, errmsg);
+
+  result := error;
 end;
 
 //***  Memory handling  ************************************************************************************************
@@ -991,14 +1042,451 @@ end;
 //***  Native functions  ***********************************************************************************************
 
 {$IFDEF MSWINDOWS}
-  {$i GLPT_gdi.inc}
+  {$i include/GLPT_gdi.inc}
 {$ENDIF}
 {$IFDEF LINUX}
-  {$i GLPT_X11.inc}
+  {$i include/GLPT_X11.inc}
 {$ENDIF}
 {$IFDEF DARWIN}
-  {$i GLPT_Cocoa.inc}
+  {$i include/GLPT_Cocoa.inc}
 {$ENDIF}
+
+//***  Thread functions  **************************************************************************************************
+
+function GLPT_CreateSemaphore(initial_value: integer = 0): pGLPT_Semaphore;
+var
+  sem: pGLPT_Semaphore;
+  success: boolean;
+begin
+  sem := pGLPT_Semaphore(calloc(sizeof(GLPT_Semaphore)));
+  {$IFDEF MSWINDOWS}
+    success := gdi_CreateSemaphore(sem, initial_value);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    success := X11_CreateSemaphore(sem, initial_value);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    success := Cocoa_CreateSemaphore(sem, initial_value);
+  {$ENDIF}
+  if success then
+    result := sem
+  else
+    begin
+      FreeMem(sem);
+      result := nil;
+    end;
+end;
+
+procedure GLPT_DestroySemaphore(var sem: pGLPT_Semaphore);
+begin
+  if assigned(sem) then
+    begin
+      {$IFDEF MSWINDOWS}
+        gdi_DestroySemaphore(sem);
+      {$ENDIF}
+      {$IFDEF LINUX}
+        X11_DestroySemaphore(sem);
+      {$ENDIF}
+      {$IFDEF DARWIN}
+        Cocoa_DestroySemaphore(sem);
+      {$ENDIF}
+      FreeMem(sem);
+      sem := nil;
+    end;
+end;
+
+function GLPT_SemaphoreTryWait(sem: pGLPT_Semaphore): integer;
+begin
+  if sem = nil then
+    begin
+      result := GLPTError(GLPT_ERROR_THREADS, 'Passed a nil semaphore"');
+      exit;
+    end;
+  {$IFDEF MSWINDOWS}
+    result := gdi_SemaphoreTryWait(sem);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := X11_SemaphoreTryWaitsem);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_SemaphoreTryWait(sem);
+  {$ENDIF}
+end;
+
+function GLPT_SemaphoreWait(sem: pGLPT_Semaphore): integer;
+begin
+    if sem = nil then
+    begin
+      result := GLPTError(GLPT_ERROR_THREADS, 'Passed a nil semaphore"');
+      exit;
+    end;
+  {$IFDEF MSWINDOWS}
+    result := gdi_SemaphoreWait(sem);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := X11_SemaphoreWait(sem);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_SemaphoreWait(sem);
+  {$ENDIF}
+end;
+
+function GLPT_SemaphoreWaitTimeout(sem: pGLPT_Semaphore; timeout: longint): integer;
+begin
+  if sem = nil then
+    begin
+      result := GLPTError(GLPT_ERROR_THREADS, 'Passed a nil semaphore"');
+      exit;
+    end;
+
+  if timeout = 0 then
+    begin
+      result := GLPT_SemaphoreTryWait(sem);
+      exit;
+    end
+  else if timeout = -1 then
+    begin
+      result := GLPT_SemaphoreWait(sem);
+      exit;
+    end;
+
+  {$IFDEF MSWINDOWS}
+    result := gdi_SemaphoreWaitTimeout(sem, timeout);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := X11_SemaphoreWaitTimeout(sem, timeout);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_SemaphoreWaitTimeout(sem, timeout);
+  {$ENDIF}
+end;
+
+function GLPT_SemaphoreValue(sem: pGLPT_Semaphore): integer;
+begin
+  {$IFDEF MSWINDOWS}
+    result := gdi_SemValue(sem);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := X11_SemValue(sem);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_SemaphoreValue(sem);
+  {$ENDIF}
+end;
+
+function GLPT_SemaphorePost(sem: pGLPT_Semaphore): integer;
+begin
+  if sem = nil then
+    begin
+      result := GLPTError(GLPT_ERROR_THREADS, 'Passed a nil semaphore"');
+      exit;
+    end;
+  {$IFDEF MSWINDOWS}
+    result := gdi_SemaphorePost(sem);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := X11_SemaphorePost(sem);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_SemaphorePost(sem);
+  {$ENDIF}
+end;
+
+function GLPT_CreateCondition: pGLPT_Condition;
+var
+  condition: pGLPT_Condition;
+  success: boolean;
+begin
+  condition := pGLPT_Condition(calloc(sizeof(GLPT_Condition)));
+  {$IFDEF MSWINDOWS}
+    success := gdi_CreateCondition(condition);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    success := X11_CreateCondition(condition);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    success := Cocoa_CreateCondition(condition);
+  {$ENDIF}
+  if success then
+    result := condition
+  else
+    begin
+      FreeMem(condition);
+      result := nil;
+    end;
+end;
+
+procedure GLPT_DestroyCondition(var condition: pGLPT_Condition);
+begin
+  if assigned(condition) then
+    begin
+      {$IFDEF MSWINDOWS}
+        gdi_DestroyCondition(condition);
+      {$ENDIF}
+      {$IFDEF LINUX}
+        X11_DestroyCondition(condition);
+      {$ENDIF}
+      {$IFDEF DARWIN}
+        Cocoa_DestroyCondition(condition);
+      {$ENDIF}
+      FreeMem(condition);
+      condition := nil;
+    end;
+end;
+
+function GLPT_ConditionSignal(condition: pGLPT_Condition): integer;
+begin
+  if condition = nil then
+    begin
+      result := GLPTError(GLPT_ERROR_THREADS, 'Passed a nil condition"');
+      exit;
+    end;
+  {$IFDEF MSWINDOWS}
+    result := gdi_ConditionSignal(condition);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := X11_ConditionSignal(condition);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_ConditionSignal(condition);
+  {$ENDIF}
+end;
+
+function GLPT_ConditionBroadcast(condition: pGLPT_Condition): integer;
+begin
+  if condition = nil then
+    begin
+      result := GLPTError(GLPT_ERROR_THREADS, 'Passed a nil condition"');
+      exit;
+    end;
+  {$IFDEF MSWINDOWS}
+    result := gdi_ConditionBroadcast(condition);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := X11_ConditionBroadcast(condition);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_ConditionBroadcast(condition);
+  {$ENDIF}
+end;
+
+function GLPT_ConditionWaitTimeout(condition: pGLPT_Condition; mutex: pGLPT_Mutex; ms: longint): integer;
+begin
+  if condition = nil then
+    begin
+      result := GLPTError(GLPT_ERROR_THREADS, 'Passed a nil condition"');
+      exit;
+    end;
+  {$IFDEF MSWINDOWS}
+    result := Cocoa_ConditionWaitTimeout(condition, mutex, ms);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := Cocoa_ConditionWaitTimeout(condition, mutex, ms);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_ConditionWaitTimeout(condition, mutex, ms);
+  {$ENDIF}
+end;
+
+function GLPT_ConditionWait(condition: pGLPT_Condition; mutex: pGLPT_Mutex): integer;
+begin
+  if condition = nil then
+    begin
+      result := GLPTError(GLPT_ERROR_THREADS, 'Passed a nil condition"');
+      exit;
+    end;
+  {$IFDEF MSWINDOWS}
+    result := gdi_ConditionWait(condition, mutex);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := X11_ConditionWait(condition, mutex);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_ConditionWait(condition, mutex);
+  {$ENDIF}
+end;
+
+
+function GLPT_CreateMutex: pGLPT_Mutex;
+var
+  mutex: pGLPT_Mutex;
+  success: boolean;
+begin
+  mutex := pGLPT_Mutex(calloc(sizeof(GLPT_Mutex)));
+  {$IFDEF MSWINDOWS}
+    success := gdi_CreateMutex(mutex);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    success := X11_CreateMutex(mutex);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    success := Cocoa_CreateMutex(mutex);
+  {$ENDIF}
+  if success then
+    result := mutex
+  else
+    begin
+      FreeMem(mutex);
+      result := nil;
+    end;
+end;
+
+procedure GLPT_DestroyMutex(var mutex: pGLPT_Mutex);
+begin
+  if assigned(mutex) then
+    begin
+      {$IFDEF MSWINDOWS}
+        gdi_DestroyMutex(mutex);
+      {$ENDIF}
+      {$IFDEF LINUX}
+        X11_DestroyMutex(mutex);
+      {$ENDIF}
+      {$IFDEF DARWIN}
+        Cocoa_DestroyMutex(mutex);
+      {$ENDIF}
+      FreeMem(mutex);
+      mutex := nil;
+    end;
+end;
+
+function GLPT_LockMutex(mutex: pGLPT_Mutex): integer;
+begin
+  if mutex = nil then
+    begin
+      result := GLPTError(GLPT_ERROR_THREADS, 'Passed a nil mutex"');
+      exit;
+    end;
+  {$IFDEF MSWINDOWS}
+    result := gdi_LockMutex(mutex);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := X11_LockMutex(mutex);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_LockMutex(mutex);
+  {$ENDIF}
+end;
+
+function GLPT_UnlockMutex(mutex: pGLPT_Mutex): integer;
+begin
+  if mutex = nil then
+    begin
+      result := GLPTError(GLPT_ERROR_THREADS, 'Passed a nil mutex"');
+      exit;
+    end;
+  {$IFDEF MSWINDOWS}
+    result := gdi_UnlockMutex(mutex);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := X11_UnlockMutex(mutex);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_UnlockMutex(mutex);
+  {$ENDIF}
+end;
+
+function GLPT_TryLockMutex(mutex: pGLPT_Mutex): integer;
+begin
+  if mutex = nil then
+    begin
+      result := GLPTError(GLPT_ERROR_THREADS, 'Passed a nil mutex"');
+      exit;
+    end;
+  {$IFDEF MSWINDOWS}
+    result := gdi_TryLockMutex(mutex);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := X11_TryLockMutex(mutex);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_TryLockMutex(mutex);
+  {$ENDIF}
+end;
+
+function GLPT_ThreadID: GLPT_Thread_ID;
+begin
+  {$IFDEF MSWINDOWS}
+    result := gdi_ThreadID;
+  {$ENDIF}
+  {$IFDEF LINUX}
+    result := X11_ThreadID;
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    result := Cocoa_ThreadID;
+  {$ENDIF}
+end;
+
+function GLPT_RunThread(thread: pGLPT_Thread): pointer; cdecl;
+begin
+  thread^.id := GLPT_ThreadID;
+  thread^.status := thread^.start(thread^.userData);
+  result := nil;
+end;
+
+function GLPT_CreateThread(start: GLPT_ThreadFunction; name: string = ''; userData: pointer = nil; stacksize: integer = GLPT_THREAD_DEFAULT_STACK_SIZE): pGLPT_Thread;
+var
+  success: boolean;
+  thread: pGLPT_Thread;
+begin
+  thread := pGLPT_Thread(calloc(sizeof(GLPT_Thread)));
+  thread^.start := start;
+  thread^.name := name;
+  thread^.userData := userData;
+  thread^.status := -1;
+  thread^.stacksize := stacksize;
+
+  {$IFDEF MSWINDOWS}
+    success := gdi_CreateThread(thread);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    success := X11_CreateThread(thread);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    success := Cocoa_CreateThread(thread);
+  {$ENDIF}
+
+  if success then
+    result := thread
+  else
+    begin
+      FreeMem(thread);
+      result := nil;
+    end;
+end;
+
+procedure GLPT_DetachThread(thread: pGLPT_Thread);
+begin
+  if thread = nil then
+    exit;
+  {$IFDEF MSWINDOWS}
+    gdi_DetachThread(thread);
+  {$ENDIF}
+  {$IFDEF LINUX}
+    X11_DetachThread(thread);
+  {$ENDIF}
+  {$IFDEF DARWIN}
+    Cocoa_DetachThread(thread);
+  {$ENDIF}
+end;
+
+procedure GLPT_WaitThread(var thread: pGLPT_Thread; var status: integer);
+begin
+  if assigned(thread) then
+    begin
+      {$IFDEF MSWINDOWS}
+        gdi_WaitThread(thread);
+      {$ENDIF}
+      {$IFDEF LINUX}
+        X11_WaitThread(thread);
+      {$ENDIF}
+      {$IFDEF DARWIN}
+        Cocoa_WaitThread(thread);
+      {$ENDIF}
+      status := thread^.status;
+      FreeMem(thread);
+      thread := nil;
+    end;
+end;
 
 //***  API functions  **************************************************************************************************
 
@@ -1044,7 +1532,20 @@ begin
 {$ENDIF}
 end;
 
-function GLPT_Init: boolean;
+procedure GLPT_Delay(ms: longint);
+begin
+{$IFDEF MSWINDOWS}
+  gdi_Delay(ms);
+{$ENDIF}
+{$IFDEF LINUX}
+  X11_Delay(ms);
+{$ENDIF}
+{$IFDEF DARWIN}
+  Cocoa_Delay(ms);
+{$ENDIF}
+end;
+
+function GLPT_Init (flags: GLPT_InitFlags = GLPT_InitFlagsAll): boolean;
 begin
   //reset the last error
   lasterr.error := GLPT_ERROR_NONE;
@@ -1054,13 +1555,13 @@ begin
   initticks := GLPT_GetTicks;
 
 {$IFDEF MSWINDOWS}
-  exit(gdi_Init);
+  exit(gdi_Init(flags));
 {$ENDIF}
 {$IFDEF LINUX}
-  exit(X11_Init);
+  exit(X11_Init(flags));
 {$ENDIF}
 {$IFDEF DARWIN}
-  exit(Cocoa_Init);
+  exit(Cocoa_Init(flags));
 {$ENDIF}
 end;
 
@@ -1106,6 +1607,7 @@ begin
   result.minorVersion := 1;
   result.profile := GLPT_CONTEXT_PROFILE_LEGACY;
   result.stencilSize := 8;
+  result.vsync := true;
 end;
 
 function GLPT_CreateWindow(posx, posy, sizex, sizey: integer; title: PChar; context: GLPT_Context; flags: longint = GLPT_WINDOW_DEFAULT): pGLPTwindow;
