@@ -1,5 +1,7 @@
 program update_readme;
 
+{$mode objfpc}{$H+}
+
 uses
   Classes,
   SysUtils,
@@ -23,6 +25,7 @@ var
   p, j: integer;
   api_list: array of OS;
   ini: TIniFile;
+  glpt_file, readme_file, ini_file: string;
 
   function asIcon(status: string): string;
   begin
@@ -39,12 +42,54 @@ var
   end;
 
 begin
+  if ParamCount <> 1 then
+  begin
+    writeln('error: need root path to the PMake source folder');
+    halt(1);
+  end;
+
+  if not DirectoryExists(ParamStr(1)) then
+  begin
+    writeln('error: root path to the PMake source folder does not exist');
+    halt(1);
+  end
+  else
+    writeln('-- root folder found');
+
+  glpt_file := IncludeTrailingPathDelimiter(ParamStr(1)) + 'GLPT.pas';
+  if not(FileExists(glpt_file)) then
+  begin
+    writeln('error: cannot find GLPT.pas');
+    halt(1);
+  end
+  else
+    writeln('-- GLPT.pas found');
+
+  readme_file := IncludeTrailingPathDelimiter(ParamStr(1)) + 'README.md';
+  if not(FileExists(readme_file)) then
+  begin
+    writeln('error: cannot find README.md');
+    halt(1);
+  end
+  else
+    writeln('-- README.md found');
+
+  ini_file := IncludeTrailingPathDelimiter(ParamStr(1)) + 'doc/GLPT.ini';
+  if not(FileExists(ini_file)) then
+  begin
+    writeln('error: cannot find GLPT.ini');
+    halt(1);
+  end
+  else
+    writeln('-- GLPT.ini found');
+
   source := TStringList.Create;
-  source.LoadFromFile('../GLPT.pas');
+  source.LoadFromFile(glpt_file);
 
   list := TStringList.Create;
 
   //skip until 'interface' is found
+  i := 0;
   while Trim(source[i]) <> 'interface' do
     Inc(i);
 
@@ -76,7 +121,7 @@ begin
   source.Free;
 
   //open the ini file
-  ini := TIniFile.Create('GLPT.ini');
+  ini := TIniFile.Create(ini_file);
 
   //create the api_list
   list.Sort;
@@ -90,7 +135,7 @@ begin
   end;
 
   readme := TStringList.Create;
-  readme.LoadFromFile('../README.md');
+  readme.LoadFromFile(readme_file);
 
   //remove old API list
   i := 0;
@@ -111,7 +156,7 @@ begin
   readme.Insert(i, '| API function              | Linux (X11)     | Mac OSX (Cocoa) | Windows (GDI)   |');
   readme.Insert(i, '## API (v' + GLPT_GetVersionString + ') support');
 
-  readme.SaveToFile('../README.md');
+  readme.SaveToFile(readme_file);
   readme.Free;
 
   //write INI

@@ -47,6 +47,7 @@ var
   bgcolor: integer;
   sometext: string;
   genid: integer;
+  sync: boolean;
 
   { UIStateType }
 
@@ -340,7 +341,7 @@ var
 
           uistate.keyentered := 0;
         end;
-        GLPT_KEY_BACK:
+        GLPT_KEY_BACKSPACE:
         begin
           //Also clear the key so that next widget
           //won't process it
@@ -418,7 +419,11 @@ var
 
       GLPT_SetCursor(curs);
     end;
-    button(GEN_ID, 150, 50);
+    if button(GEN_ID, 150, 50) = 1 then
+    begin
+      GLPT_SetVSync(sync);
+      sync := not sync;
+    end;
 
     if button(GEN_ID, 50, 150) = 1 then
       bgcolor := Round(Random * $ffffff);
@@ -472,14 +477,14 @@ var
       GLPT_MESSAGE_KEYPRESS:
       begin
         uistate.keymod := event^.params.keyboard.shiftstate;
-        uistate.keyentered := event^.params.keyboard.keychar;
-        uistate.keychar := event^.params.keyboard.keychar;
+        uistate.keyentered := event^.params.keyboard.keycode;
+        uistate.keychar := event^.params.keyboard.keycode;
 
         ////if key is ASCII, accept it as character input
         //if (uistate.keyentered and $FF80) = 0 then
         //  uistate.keychar := uistate.keyentered and $7f;
 
-        if event^.params.keyboard.keychar = GLPT_KEY_ESCAPE then
+        if event^.params.keyboard.keycode = GLPT_KEY_ESCAPE then
           GLPT_SetWindowShouldClose(event^.win, True);
       end;
 
@@ -514,7 +519,7 @@ begin
   if not GLPT_Init then
     halt(-1);
 
-  window := GLPT_CreateWindow(0, 0, width, height, 'Simple example');
+  window := GLPT_CreateWindow(0, 0, width, height, 'Simple example', GLPT_GetDefaultContext);
   if window = nil then
   begin
     GLPT_Terminate;

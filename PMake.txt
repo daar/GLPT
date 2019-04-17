@@ -9,6 +9,7 @@ compiler_minimum_required(3,0,4);
 project('GLPT', '0.1.1');
 
 // subdirectories
+add_subdirectory('doc');
 add_subdirectory('examples');
 
 // include files

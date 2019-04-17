@@ -48,7 +48,7 @@ const
   //OpenGL Pascal Toolkit version
   GLPT_VERSION_MAJOR = 0;
   GLPT_VERSION_MINOR = 1;
-  GLPT_VERSION_REVISION = 1;
+  GLPT_VERSION_REVISION = 2;
 
   //mouse buttons.
   GLPT_MOUSE_BUTTON_LEFT = $00000001;
@@ -898,7 +898,13 @@ function GLPT_GetPrefPath (org: string; app: string): string;
   Converts a scancode to human-readable name
   @return name of scancode
 }
-function GLPT_GetScancodeName (scanecode: GLPT_Scancode): string;
+function GLPT_GetScancodeName (scancode: GLPT_Scancode): string;
+
+{
+  Enables or disables vsync
+  @param status: vsync status
+}
+procedure GLPT_SetVSync(sync: boolean);
 
 {$IFDEF DARWIN}
 {$i include/darwin/ptypes.inc}
@@ -906,10 +912,13 @@ function GLPT_GetScancodeName (scanecode: GLPT_Scancode): string;
 {$i include/darwin/errno.inc}
 {$ENDIF}
 
-{$i include/GLPT_Threads.inc}
-
 implementation
 
+uses
+  SysUtils,
+  GL, GLext;
+
+{$i include/GLPT_Threads.inc}
 {$i include/GLPT_Keyboard.inc}
 {$i include/GLPT_Controller.inc}
 
@@ -1042,7 +1051,7 @@ end;
 //***  Native functions  ***********************************************************************************************
 
 {$IFDEF MSWINDOWS}
-  {$i include/GLPT_gdi.inc}
+
 {$ENDIF}
 {$IFDEF LINUX}
   {$i include/GLPT_X11.inc}
@@ -1521,15 +1530,7 @@ end;
 
 function GLPT_GetTicks: longint;
 begin
-{$IFDEF MSWINDOWS}
-  exit(gdi_GetTicks - initticks);
-{$ENDIF}
-{$IFDEF LINUX}
-  exit(X11_GetTicks - initticks);
-{$ENDIF}
-{$IFDEF DARWIN}
-  exit(Cocoa_GetTicks - initticks);
-{$ENDIF}
+  exit(Trunc(GLPT_GetTime * 1000));
 end;
 
 procedure GLPT_Delay(ms: longint);
@@ -1772,10 +1773,10 @@ end;
 function GLPT_GetBasePath: string;
 begin
 {$IFDEF MSWINDOWS}
-  result := gdi_GetBasePath;
+  result := ExtractFilePath(ParamStr(0));
 {$ENDIF}
 {$IFDEF LINUX}
-  result := X11_GetBasePath;
+  result := ExtractFilePath(ParamStr(0));
 {$ENDIF}
 {$IFDEF DARWIN}
   result := Cocoa_GetBasePath;
@@ -1785,19 +1786,32 @@ end;
 function GLPT_GetPrefPath(org: string; app: string): string;
 begin
 {$IFDEF MSWINDOWS}
-  result := gdi_GetPrefPath(org, app);
+  result := GetAppConfigDir(False);
 {$ENDIF}
 {$IFDEF LINUX}
-  result := X11_GetPrefPath(org, app);
+  result := GetAppConfigDir(False);
 {$ENDIF}
 {$IFDEF DARWIN}
   result := Cocoa_GetPrefPath(org, app);
 {$ENDIF}
 end;
 
-function GLPT_GetScancodeName (scanecode: GLPT_Scancode): string;
+function GLPT_GetScancodeName (scancode: GLPT_Scancode): string;
 begin
-  result := GLPT_scancode_names[scanecode];
+  result := GLPT_scancode_names[scancode];
+end;
+
+procedure GLPT_SetVSync(sync: boolean);
+begin
+{$IFDEF MSWINDOWS}
+  gdi_SetVSync(sync);
+{$ENDIF}
+{$IFDEF LINUX}
+  //X11_SetVSync(sync);
+{$ENDIF}
+{$IFDEF DARWIN}
+  //Cocoa_SetVSync(sync);
+{$ENDIF}
 end;
 
 end.

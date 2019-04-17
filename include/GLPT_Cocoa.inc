@@ -925,11 +925,6 @@ begin
   result := NSDate.date.timeIntervalSince1970;
 end;
 
-function Cocoa_GetTicks: longint;
-begin
-  result := Trunc(Cocoa_GetTime * 1000);
-end;
-
 function Cocoa_Terminate: boolean;
 begin
   NSApp.terminate(nil);

@@ -206,7 +206,7 @@ var
       GLPT_MESSAGE_KEYPRESS:
       begin
         (* change view angle, exit upon ESC *)
-        case event^.params.keyboard.keychar of
+        case event^.params.keyboard.keycode of
           GLPT_KEY_Z: view_rotz += 5.0;
           GLPT_KEY_X: view_rotz -= 5.0;
           GLPT_KEY_ESCAPE: GLPT_SetWindowShouldClose(event^.win, True);
@@ -293,7 +293,7 @@ begin
   if not GLPT_Init then
     halt(-1);
 
-  win := GLPT_CreateWindow(0, 0, 640, 480, 'Gears');
+  win := GLPT_CreateWindow(0, 0, 640, 480, 'Gears', GLPT_GetDefaultContext);
 
   win^.event_callback := @event_callback;
 
