@@ -32,6 +32,9 @@ type
   pGLPT_Mutex = ^GLPT_Mutex;
   GLPT_Mutex = record
     {$IFDEF DARWIN}
+    public type 
+      pthread_mutex_t = pointer; { from ptypes.inc }
+    public
       handle: pthread_mutex_t;
     {$ENDIF}
   end;
@@ -48,6 +51,9 @@ type
   pGLPT_Condition = ^GLPT_Condition;
   GLPT_Condition = record
     {$IFDEF DARWIN}
+    public type 
+      pthread_cond_t = pointer; { from ptypes.inc }
+    public
       handle: pthread_cond_t;
     {$ENDIF}
   end;
@@ -65,8 +71,11 @@ type
   pGLPT_Semaphore = ^GLPT_Semaphore;
   GLPT_Semaphore = record
     {$IFDEF DARWIN}
-    handle: psem_t;
-    name: string;
+    public type 
+      psem_t = pointer; { from ptypes.inc }
+    public
+      handle: psem_t;
+      name: string;
     {$ENDIF}
   end;
 

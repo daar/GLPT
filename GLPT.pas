@@ -25,6 +25,7 @@ unit GLPT;
 {$mode objfpc}
 
 {$IFDEF DARWIN}
+  {$modeswitch advancedrecords}
   {$modeswitch objectivec2}
   {$linkframework CoreVideo}
 {$ENDIF}
@@ -906,17 +907,17 @@ function GLPT_GetScancodeName (scancode: GLPT_Scancode): string;
 }
 procedure GLPT_SetVSync(sync: boolean);
 
-{$IFDEF DARWIN}
-{$i include/darwin/ptypes.inc}
-{$i include/darwin/pthread.inc}
-{$i include/darwin/errno.inc}
-{$ENDIF}
-
 {$i include/GLPT_Threads.inc}
 
 implementation
 uses
   GL, GLext;
+
+{$IFDEF DARWIN}
+{$i include/darwin/ptypes.inc}
+{$i include/darwin/pthread.inc}
+{$i include/darwin/errno.inc}
+{$ENDIF}
 
 {$i include/GLPT_Keyboard.inc}
 {$i include/GLPT_Controller.inc}
