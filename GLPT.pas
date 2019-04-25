@@ -912,13 +912,12 @@ procedure GLPT_SetVSync(sync: boolean);
 {$i include/darwin/errno.inc}
 {$ENDIF}
 
-implementation
+{$i include/GLPT_Threads.inc}
 
+implementation
 uses
-  SysUtils,
   GL, GLext;
 
-{$i include/GLPT_Threads.inc}
 {$i include/GLPT_Keyboard.inc}
 {$i include/GLPT_Controller.inc}
 
