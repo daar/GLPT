@@ -36,10 +36,7 @@ CONST PTHREAD_EXPLICIT_SCHED       = 0;
     ppthread_cond_t      = ^pthread_cond_t;
     ppthread_condattr_t  = ^pthread_condattr_t;
 
-    //sem_t       = cint;
-    psem_t          = ^sem_t;
-    TSemaphore  = sem_t;
-    PSemaphore  = ^TSemaphore;
+    psem_t          = {^sem_t}sizeuint;
 
 function  pthread_getspecific      (t : pthread_key_t):pointer; cdecl; external 'c';
 function  pthread_setspecific      (t : pthread_key_t;p:pointer):cint; cdecl; external 'c';
@@ -73,7 +70,7 @@ function pthread_kill(__thread:pthread_t; __signo:cint):cint;cdecl;external 'c';
 //function sem_init(__sem:Psem_t; __pshared:cint;__value:cuint):cint;cdecl; external 'c' name 'sem_init'; deprecated;
 //function sem_destroy(__sem:Psem_t):cint;cdecl;external 'c' name 'sem_destroy';
 //function sem_getvalue(__sem:Psem_t; __sval:Pcint):cint;cdecl;external 'c'  name 'sem_getvalue'; deprecated;
-function sem_open(name: pchar; oflag: cint): Psem_t; cdecl; varargs; external 'c' name 'sem_open';
+function sem_open(name: pchar; oflag: cint): psem_t; cdecl; varargs; external 'c' name 'sem_open';
 function sem_close(__sem:Psem_t):cint;cdecl;external 'c'  name 'sem_close';
 function sem_unlink(__name:Pchar):cint;cdecl;external 'c' name 'sem_unlink';
 function sem_wait(__sem:Psem_t):cint;cdecl;external 'c'  name 'sem_wait';

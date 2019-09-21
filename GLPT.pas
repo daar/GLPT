@@ -33,7 +33,7 @@ unit GLPT;
 interface
 
 uses
-  CTypes,
+  CThreads, Classes, CTypes,
 {$IFDEF MSWINDOWS}
   Windows;
 {$ENDIF}
@@ -93,6 +93,10 @@ const
   GLPT_MESSAGE_DROPEXIT = 21;
   GLPT_MESSAGE_HSCROLL = 22;
   GLPT_MESSAGE_ABOUT = 23;
+  // TODO: we need added/removed events and up/down for controllers
+  GLPT_MESSAGE_CONTROLLER_HAT = 24;
+  GLPT_MESSAGE_CONTROLLER_AXIS = 25;
+  GLPT_MESSAGE_CONTROLLER_BUTTON = 26;
   GLPT_MESSAGE_USER = 50000;
   GLPT_MESSAGE_KILLME = MaxInt;
 
@@ -695,7 +699,7 @@ type
 
   GLPT_MsgParmControllerHat = record
     which: SInt16;
-    hat: Uint8;
+    hat: UInt8;
     value: SInt16;
   end;
 
@@ -721,10 +725,13 @@ type
   pGLPT_MessageParams = ^GLPT_MessageParams;
   GLPT_MessageParams = record
     case integer of
-      0: (mouse: GLPT_MsgParmMouse);         //< mouse event record
-      1: (keyboard: GLPT_MsgParmKeyboard);   //< keyboard event record
-      2: (rect: GLPT_MsgParmRect);           //< rectangel event record
-      3: (user: GLPT_MsgParmUser);           //< used defined event record
+      0: (mouse: GLPT_MsgParmMouse);             //< mouse event record
+      1: (keyboard: GLPT_MsgParmKeyboard);       //< keyboard event record
+      2: (rect: GLPT_MsgParmRect);               //< rectangel event record
+      3: (user: GLPT_MsgParmUser);               //< used defined event record
+      4: (axis: GLPT_MsgParmControllerAxis);     //< controller (axis)
+      4: (hat: GLPT_MsgParmControllerHat);       //< controller (hat/joystick)
+      4: (button: GLPT_MsgParmControllerButton); //< controller (button)
   end;
 
   GLPT_MessageRec = record

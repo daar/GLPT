@@ -1,4 +1,4 @@
-program simple;
+program gamepad;
 
 {$mode objfpc}
 
@@ -24,12 +24,19 @@ var
   begin
     case event^.mcode of
 
+      GLPT_MESSAGE_CONTROLLER_AXIS:
+        begin
+          writeln('axis:',event^.params.axis.which,' ',event^.params.axis.axis, ' = ', event^.params.axis.value);
+        end;
+
+      GLPT_MESSAGE_CONTROLLER_BUTTON:
+        begin
+          writeln('button:',event^.params.button.which,' ',event^.params.button.button, ' = ', event^.params.button.state);
+        end;
+
       GLPT_MESSAGE_KEYPRESS:
-      begin
-        //writeln(event^.params.keyboard.keycode);
         if event^.params.keyboard.keycode = GLPT_KEY_ESCAPE then
           GLPT_SetWindowShouldClose(event^.win, True);
-      end;
 
       GLPT_MESSAGE_MOUSEDOWN:
         writeln('GLPT_MESSAGE_MOUSEDOWN:',event^.params.mouse.buttons);
@@ -57,6 +64,8 @@ begin
 
   while not GLPT_WindowShouldClose(window) do
   begin
+    glViewport(0, 0, width, height);
+    glClear(GL_COLOR_BUFFER_BIT);
     GLPT_SwapBuffers(window);
     GLPT_PollEvents;
   end;
