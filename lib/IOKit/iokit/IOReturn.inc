@@ -4,7 +4,7 @@
 
 {$ifdef TYPES}
 type
-  IOReturn = kern_return_t;
+  IOReturn = LongInt;
   IOReturnPtr = ^IOReturn;
 {$endif}
 

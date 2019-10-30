@@ -640,6 +640,7 @@ type
     profile: byte;
     stencilSize: byte;
     vsync: boolean;
+    bestResolution: boolean;
   end;
 
   pGLPTwindow = ^GLPTwindow;
@@ -1616,6 +1617,7 @@ begin
   result.profile := GLPT_CONTEXT_PROFILE_LEGACY;
   result.stencilSize := 8;
   result.vsync := true;
+  result.bestResolution := false;
 end;
 
 function GLPT_CreateWindow(posx, posy, sizex, sizey: integer; title: PChar; context: GLPT_Context; flags: longint = GLPT_WINDOW_DEFAULT): pGLPTwindow;

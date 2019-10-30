@@ -209,8 +209,9 @@ cleanup:
 //$bookmark -
 //$bookmark COCOA UTILS
 //$bookmark -
-type
-  objcbool = bool;
+
+//type
+//  objcbool = bool;
   
 type
   NSFileManager_Additions = objccategory external (NSFileManager)
@@ -364,10 +365,18 @@ begin
         win := TCocoaWindow(event.window).ref;
 
       case event.type_ of
+        NSLeftMouseDragged, NSRightMouseDragged:
+          begin
+            params.mouse.x := Trunc(event.locationInWindow.x);
+            params.mouse.y := Trunc(event.window.contentView.frame.size.height - event.locationInWindow.y);
+            params.mouse.shiftstate := Cocoa_GetKeyboardShiftState;
+            params.mouse.timestamp := Cocoa_GetTime;
+            glptPostMessage(win, GLPT_MESSAGE_MOUSEMOVE, params);
+          end;
         NSMouseMoved:
           begin
             params.mouse.x := Trunc(event.locationInWindow.x);
-            params.mouse.y := Trunc(event.locationInWindow.y);
+            params.mouse.y := Trunc(event.window.contentView.frame.size.height - event.locationInWindow.y);
             params.mouse.shiftstate := Cocoa_GetKeyboardShiftState;
             params.mouse.timestamp := Cocoa_GetTime;
             glptPostMessage(win, GLPT_MESSAGE_MOUSEMOVE, params);
@@ -375,7 +384,7 @@ begin
         NSLeftMouseDown, NSRightMouseDown:
           begin
             params.mouse.x := Trunc(event.locationInWindow.x);
-            params.mouse.y := Trunc(event.locationInWindow.y);
+            params.mouse.y := Trunc(event.window.contentView.frame.size.height - event.locationInWindow.y);
             params.mouse.shiftstate := Cocoa_GetKeyboardShiftState;
             params.mouse.timestamp := Cocoa_GetTime;
             case event.type_ of
@@ -389,7 +398,7 @@ begin
         NSLeftMouseUp, NSRightMouseUp:
           begin
             params.mouse.x := Trunc(event.locationInWindow.x);
-            params.mouse.y := Trunc(event.locationInWindow.y);
+            params.mouse.y := Trunc(event.window.contentView.frame.size.height - event.locationInWindow.y);
             params.mouse.shiftstate := Cocoa_GetKeyboardShiftState;
             params.mouse.timestamp := Cocoa_GetTime;
             case event.type_ of
@@ -530,6 +539,9 @@ begin
     GLPTError(GLPT_ERROR_PLATFORM, 'invalid NSOpenGLContext');
   openGLContext.makeCurrentContext;
   openGLContext.setView(self);
+
+
+  setWantsBestResolutionOpenGLSurface(glptContext.bestResolution);
 
   // enable vsync
   if glptContext.vsync then
@@ -1386,7 +1398,7 @@ begin
   result := true;
 end;
 
-procedure Cocoa_GamepadWasAddedCallback(context: pointer; result_: IOReturn; sender: pointer; device: IOHIDDeviceRef); cdecl;
+procedure Cocoa_GamepadWasAddedCallback(context: pointer; result_: IOKit.IOReturn; sender: pointer; device: IOHIDDeviceRef); cdecl;
 var
   info: HIDDeviceInfo;
 begin
@@ -1400,7 +1412,7 @@ begin
     end;
 end;
 
-procedure Cocoa_GamepadWasRemovedCallback(context: pointer; result_: IOReturn; sender: pointer; device: IOHIDDeviceRef); cdecl;
+procedure Cocoa_GamepadWasRemovedCallback(context: pointer; result_: IOKit.IOReturn; sender: pointer; device: IOHIDDeviceRef); cdecl;
 var
   i: integer;
 begin
