@@ -303,6 +303,35 @@ X11_UpdateKeymap(_THIS)
 
 *)
 
+function ConvertShiftState(AState: Cardinal): TShiftState;
+begin
+  Result := [];
+  if (AState and Button1Mask) <> 0 then
+    Include(Result, ssLeft);
+  if (AState and Button2Mask) <> 0 then
+    Include(Result, ssMiddle);
+  if (AState and Button3Mask) <> 0 then
+    Include(Result, ssRight);
+  if (AState and ShiftMask) <> 0 then
+    Include(Result, ssShift);
+  if (AState and LockMask) <> 0 then
+    Include(Result, ssCaps);
+  if (AState and ControlMask) <> 0 then
+    Include(Result, ssCtrl);
+  if (AState and Mod1Mask) <> 0 then
+    Include(Result, ssAlt);
+  { Numlock is often permanently enabled after booting, so this always gives
+    use the incorrect ShiftState. So we simply stop checking ssNum as part
+    of the ShiftState. }
+//  if (AState and Mod2Mask) <> 0 then
+//    Include(Result, ssNum);
+  { NOTE: Mod3Mask is normally unused for some reason }
+  if (AState and Mod4Mask) <> 0 then   { aka "Windows key" }
+    Include(Result, ssSuper);
+  if (AState and Mod5Mask) <> 0 then
+    Include(Result, ssScroll);
+end;
+
 function X11_GetTime: double;
 var
   now: timespec;
@@ -472,26 +501,36 @@ begin
                     end;
         ButtonPress,
         ButtonRelease:
-                       begin
-                         params.mouse.x := event.xbutton.x;
-                         params.mouse.y := event.xbutton.y;
-                         //params.mouse.shiftstate := X11_GetKeyboardShiftState;
-                         params.mouse.timestamp := X11_GetTime;
+                    begin
+                       params.mouse.x := event.xbutton.x;
+                       params.mouse.y := event.xbutton.y;
+                       //params.mouse.shiftstate := X11_GetKeyboardShiftState;
+                       params.mouse.timestamp := X11_GetTime;
 
-                         case event.xbutton.button of 
-                           Button1: params.mouse.Buttons := GLPT_MOUSE_BUTTON_LEFT;
-                           Button2: params.mouse.Buttons := GLPT_MOUSE_BUTTON_MIDDLE;
-                           Button3: params.mouse.Buttons := GLPT_MOUSE_BUTTON_RIGHT;
-                         end;
-
-                         case event._type of 
-                           ButtonPress: glptPostMessage(win, GLPT_MESSAGE_MOUSEDOWN, params);
-                           ButtonRelease: glptPostMessage(win, GLPT_MESSAGE_MOUSEUP, params);
-                         end;
+                       case event.xbutton.button of
+                         Button1: params.mouse.Buttons := GLPT_MOUSE_BUTTON_LEFT;
+                         Button2: params.mouse.Buttons := GLPT_MOUSE_BUTTON_MIDDLE;
+                         Button3: params.mouse.Buttons := GLPT_MOUSE_BUTTON_RIGHT;
                        end;
-        MotionNotify:
-                      begin
-                      end;
+
+                       case event._type of
+                         ButtonPress: glptPostMessage(win, GLPT_MESSAGE_MOUSEDOWN, params);
+                         ButtonRelease: glptPostMessage(win, GLPT_MESSAGE_MOUSEUP, params);
+                       end;
+                     end;
+           MotionNotify:
+                       begin
+                         repeat
+                           //
+                         until not XCheckTypedWindowEvent(win^.dpy, event.xmotion.window, X.MotionNotify, @event);
+
+                         params.mouse.x          := event.xmotion.x;
+                         params.mouse.y          := event.xmotion.y;
+                         params.mouse.Buttons    := (event.xmotion.state and $FF00) shr 8;
+                         params.mouse.shiftstate := ConvertShiftState(event.xmotion.state);
+
+                         glptPostMessage(win, GLPT_MESSAGE_MOUSEMOVE, params);
+                       end;
       end;
     end;
 
@@ -520,25 +559,7 @@ end;
 //begin
 //  Windows.GetKeyboardState(State);
 
-//  Result := [];
-//  if (State[VK_SHIFT] and 128) <> 0 then
-//    Include(Result, ssShift);
-//  if (State[VK_MENU] and 128) <> 0 then
-//    Include(Result, ssAlt);
-//  if (State[VK_CONTROL] and 128) <> 0 then
-//    Include(Result, ssCtrl);
-//  if (State[VK_LBUTTON] and 128) <> 0 then
-//    Include(Result, ssLeft);
-//  if (State[VK_RBUTTON] and 128) <> 0 then
-//    Include(Result, ssRight);
-//  if (State[VK_MBUTTON] and 128) <> 0 then
-//    Include(Result, ssMiddle);
-//  if (State[VK_CAPITAL] and 1) <> 0 then
-//    Include(Result, ssCaps);
-//  if (State[VK_NUMLOCK] and 1) <> 0 then
-//    Include(Result, ssNum);
-//  if (State[VK_SCROLL] and 1) <> 0 then
-//    Include(Result, ssScroll);
+//  exit(ConvertShiftState(State));
 //end;
 
 function X11_Init: boolean;
