@@ -902,6 +902,7 @@ var
 
   inittime: double = 0;
   initticks: longint = 0;
+  initialized: boolean = False;
   lasterr: GLPT_error;
 
 //***  Error handling  *************************************************************************************************
@@ -1057,14 +1058,16 @@ begin
   initticks := GLPT_GetTicks;
 
 {$IFDEF MSWINDOWS}
-  exit(gdi_Init);
+  initialized := gdi_Init;
 {$ENDIF}
 {$IFDEF LINUX}
-  exit(X11_Init);
+  initialized := X11_Init;
 {$ENDIF}
 {$IFDEF DARWIN}
-  exit(Cocoa_Init);
+  initialized := Cocoa_Init;
 {$ENDIF}
+
+  exit(initialized);
 end;
 
 function GLPT_Terminate: boolean;
@@ -1116,6 +1119,12 @@ var
   win: pGLPTwindow = nil;
   res: boolean = False;
 begin
+  if initialized = False then
+  begin
+    glptError(GLPT_ERROR_PLATFORM, 'GLPT not initialized');
+    halt(-1);
+  end;
+
   win := calloc(sizeof(GLPTWindow));
   current_win := win;
 
