@@ -365,6 +365,13 @@ begin
         win := TCocoaWindow(event.window).ref;
 
       case event.type_ of
+        NSScrollWheel:
+          begin
+            params.mouse.deltaY := event.deltaY;
+            params.mouse.timestamp := Cocoa_GetTime;
+            params.mouse.shiftstate := Cocoa_GetKeyboardShiftState;
+            glptPostMessage(win, GLPT_MESSAGE_SCROLL, params);
+          end;
         NSLeftMouseDragged, NSRightMouseDragged:
           begin
             params.mouse.x := Trunc(event.locationInWindow.x);

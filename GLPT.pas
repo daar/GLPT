@@ -680,6 +680,7 @@ type
   GLPT_MsgParmMouse = record
     x: integer;                //< X position of the mouse
     y: integer;                //< Y position of the mouder
+    deltaY: single;            //< scroll wheel delta Y
     buttons: word;             //< button state of the mouse
     shiftstate: TShiftState;   //< shift state of the keyboard
     delta: integer;            //< drag distance of mouse
