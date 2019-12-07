@@ -457,7 +457,6 @@ var
   win: pGLPTwindow;
   params: GLPT_MessageParams;
   r: integer;
-  done: integer = 0;
 begin
   win := pGLPTwindow(windowlist.first);
 
@@ -473,7 +472,7 @@ begin
         ClientMessage:
                        begin
                          if event.xclient.data.l[0] = win^.wmDeleteMessage then // quit!
-                           done := 1;
+                           GLPT_SetWindowShouldClose(win, True);
                        end;
         Expose:
                 begin
