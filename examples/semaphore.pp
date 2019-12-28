@@ -27,7 +27,6 @@ begin
 end;
 
 var
-  window: pGLPTWindow;
   thread: pGLPT_Thread;
 begin
   GLPT_SetErrorCallback(@error_callback);

@@ -1,6 +1,6 @@
 {$mode objfpc}
 
-program condition_variable;
+program mutex;
 uses
   GLPT;
 
@@ -26,7 +26,7 @@ begin
   result := i;
 end;
 
-function threadB_callback (thread: pGLPT_Thread): integer;
+function threadB_callback (userData: pointer): integer;
 var
   i: integer;
 begin
@@ -41,7 +41,6 @@ begin
 end;
 
 var
-  window: pGLPTWindow;
   threadA, threadB: pGLPT_Thread;
   status: integer;
 begin

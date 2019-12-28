@@ -639,6 +639,7 @@ type
     minorVersion: byte;
     profile: byte;
     stencilSize: byte;
+    multiSamples: byte;
     vsync: boolean;
     bestResolution: boolean;
   end;
@@ -916,17 +917,18 @@ function GLPT_GetScancodeName (scancode: GLPT_Scancode): string;
 }
 procedure GLPT_SetVSync(sync: boolean);
 
-{$i include/GLPT_Threads.inc}
-
-implementation
-uses
-  GL, GLext;
-
+// TODO: we need to include these for GLPT_Threads.inc but they polute the namespace now
 {$IFDEF DARWIN}
 {$i include/darwin/ptypes.inc}
 {$i include/darwin/pthread.inc}
 {$i include/darwin/errno.inc}
 {$ENDIF}
+
+{$i include/GLPT_Threads.inc}
+
+implementation
+uses
+  GL, GLext;
 
 {$i include/GLPT_Keyboard.inc}
 {$i include/GLPT_Controller.inc}
@@ -989,7 +991,7 @@ end;
 
 function calloc(size: ptruint): pointer;
 var
-  itm: pointer;
+  itm: pointer = nil;
 begin
   GetMem(itm, size);
   FillByte(itm^, size, 0);
@@ -1610,13 +1612,14 @@ end;
 
 function GLPT_GetDefaultContext: GLPT_Context;
 begin
-  result.colorSize := 32;
-  result.depthSize := 32;
+  result.colorSize := 24;
+  result.depthSize := 24;
   result.doubleBuffer := true;
   result.majorVersion := 2;
   result.minorVersion := 1;
   result.profile := GLPT_CONTEXT_PROFILE_LEGACY;
   result.stencilSize := 8;
+  result.multiSamples := 0;
   result.vsync := true;
   result.bestResolution := false;
 end;

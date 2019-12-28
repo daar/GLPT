@@ -210,8 +210,10 @@ cleanup:
 //$bookmark COCOA UTILS
 //$bookmark -
 
-//type
-//  objcbool = bool;
+{$if FPC_FULLVERSION <= 30004}
+type
+  objcbool = bool;
+{$endif}
   
 type
   NSFileManager_Additions = objccategory external (NSFileManager)
@@ -547,8 +549,9 @@ begin
   openGLContext.makeCurrentContext;
   openGLContext.setView(self);
 
-
+  {$if FPC_FULLVERSION > 30004}
   setWantsBestResolutionOpenGLSurface(glptContext.bestResolution);
+  {$endif}
 
   // enable vsync
   if glptContext.vsync then
@@ -625,16 +628,6 @@ var
 begin
   context := glptContext;
 
-  // note: implement this?
-  //if (_this->gl_config.accelerated >= 0) {
-  //    if (_this->gl_config.accelerated) {
-  //        attr[i++] = NSOpenGLPFAAccelerated;
-  //    } else {
-  //        attr[i++] = NSOpenGLPFARendererID;
-  //        attr[i++] = kCGLRendererGenericFloatID;
-  //    }
-  //}
-
   if context.doubleBuffer then
     attributes[Inc(i)] := NSOpenGLPFADoubleBuffer;
 
@@ -646,6 +639,16 @@ begin
 
   attributes[Inc(i)] := NSOpenGLPFAStencilSize;
   attributes[Inc(i)] := context.stencilSize;
+
+  if context.multiSamples > 0 then
+    begin
+      attributes[Inc(i)] := NSOpenGLPFAMultisample;
+      attributes[Inc(i)] := 1;
+      attributes[Inc(i)] := NSOpenGLPFASampleBuffers;
+      attributes[Inc(i)] := 1;
+      attributes[Inc(i)] := NSOpenGLPFASamples;
+      attributes[Inc(i)] := context.multiSamples;
+    end;
 
   // we can only specify "legacy" or "core" on mac and the system will decide what version we actually get
   attributes[Inc(i)] := NSOpenGLPFAOpenGLProfile;

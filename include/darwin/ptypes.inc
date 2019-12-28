@@ -196,7 +196,7 @@ CONST
 
    pthread_t            = pointer;
    pthread_attr_t       = record sig: clong; opaque: array[0..{$ifdef cpu64}56{$else}36{$endif}-1] of byte; end;
-   pthread_mutex_t      = {$i pmutext.inc}
+   pthread_mutex_t      = record sig: {$ifdef cpu64}int64{$else}longint{$endif}; opaque: array[0..{$ifdef cpu64}56{$else}40{$endif}-1] of byte; end;
    pthread_mutexattr_t  = record sig: clong; opaque: array[0..8-1] of byte; end;
    pthread_cond_t       = record sig: clong; opaque: array[0..{$ifdef cpu64}40{$else}24{$endif}-1] of byte; end;
    pthread_condattr_t   = record sig: clong; opaque: array[0..{$ifdef cpu64}8{$else}4{$endif}-1] of byte; end;
