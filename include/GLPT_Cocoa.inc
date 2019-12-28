@@ -206,9 +206,9 @@ cleanup:
 
 *)
 
-//$bookmark -
-//$bookmark COCOA UTILS
-//$bookmark -
+//#########################################################
+// COCOA UTILS
+//#########################################################
 
 {$if FPC_FULLVERSION <= 30004}
 type
@@ -225,9 +225,10 @@ begin
   result := NSString.stringWithCString_length(@str[1], length(str));
 end;
 
-//$bookmark -
-//$bookmark COCOA WINDOWS
-//$bookmark -
+//#########################################################
+// COCOA WINDOWS
+//#########################################################
+
 type
   TBorderlessWindow = objcclass (NSWindow)
     public
@@ -330,9 +331,9 @@ begin
   glptPostMessage(ref, GLPT_MESSAGE_DEACTIVATE, params);
 end;
 
-//$bookmark -
-//$bookmark COCOA APP
-//$bookmark -
+//#########################################################
+// COCOA APP
+//#########################################################
 
 type
   TCocoaApp = objcclass (NSApplication)
@@ -449,9 +450,9 @@ begin
   pool.release;
 end;
 
-//$bookmark -
-//$bookmark COCOA OPENGL VIEW
-//$bookmark -
+//#########################################################
+// COCOA OPENGL VIEW
+//#########################################################
 
 type
   TOpenGLView = objcclass (NSView)
@@ -691,21 +692,17 @@ begin
     NSNotificationCenter(NSNotificationCenter.defaultCenter).addObserver_selector_name_object(result, objcselector('frameChanged:'), NSViewGlobalFrameDidChangeNotification, nil);
 end;
 
-//$bookmark -
-//$bookmark THREADS
-//$bookmark -
+//#########################################################
+// THREADS
+//#########################################################
 
 function Cocoa_CreateSemaphore(sem: pGLPT_Semaphore; initial_value: integer): boolean;
 begin
   // sem_init doesn't exist on macOS so we need to rely on named semaphores
   sem^.name := '/'+HexStr(sem)+#0;
   sem_unlink(@sem^.name[1]);
-  sem^.handle := sem_open(@sem^.name[1], O_CREAT, {0644}cint(S_IWUSR), cint(initial_value));
-  //writeln('sem_open:',fpGetErrno);
-  //writeln(sem^.handle);
-  //writeln(sizeof(psem_t));
-  //writeln(sizeof(sizeuint));
-  if (sem^.handle = SEM_FAILED) {or (sem^.handle = pointer(SEM_FAILED))} then
+  sem^.handle := sem_open(@sem^.name[1], O_CREAT, cint(S_IWUSR), cint(initial_value));
+  if (sem^.handle = SEM_FAILED) then
     begin
       GLPTError(GLPT_ERROR_THREADS, 'sem_open() failed '+IntToStr(fpGetErrno));
       result := false;
@@ -924,9 +921,9 @@ begin
     result := true;
 end;
 
-//$bookmark -
-//$bookmark GLPT FUNCTIONS
-//$bookmark -
+//#########################################################
+// GLPT FUNCTIONS
+//#########################################################
 
 procedure Cocoa_Delay(ms: longint);
 begin
@@ -1136,14 +1133,15 @@ begin
   AddMenu(windowMenu);
 end;
 
-//$bookmark -
-//$bookmark CONTROLLERS
-//$bookmark -
+//#########################################################
+// CONTROLLERS
+//#########################################################
 
 // https://stackoverflow.com/questions/2234364/how-to-detect-a-gamepad-button-press-on-osx-10-5-and-higher
 
 var
   HIDElementDeviceID: integer = 0;
+
 type
   HIDElementType = (hid_element_hat, hid_element_axis, hid_element_button);
   HIDElementInfo = class
@@ -1177,9 +1175,7 @@ begin
   typ := _type;
 end;
 
-// TODO: this is top level stuff right? we can't use classes though
-// so we need to make a new linked list record I guess?
-// in that case rename these to HIDDeviceInfo
+// TODO: this information needs to be in the GLPT_MessageParams I think but not for now
 type
   HIDDeviceInfo = class
     name: string;
@@ -1191,10 +1187,17 @@ type
     elementIndexes: array[HIDElementType] of UInt16;
     id: integer;
 
+    constructor Create;
     procedure AfterConstruction; override;
     destructor Destroy; override;
   end;
   HIDDeviceInfoList = specialize TFPGObjectList<HIDDeviceInfo>;
+
+constructor HIDDeviceInfo.Create;
+begin
+  id := HIDElementDeviceID;
+  inc(HIDElementDeviceID);
+end;
 
 procedure HIDDeviceInfo.AfterConstruction;
 begin
@@ -1328,10 +1331,10 @@ function Cocoa_GetHIDDeviceInfo(hidDevice: IOHIDDeviceRef; var info: HIDDeviceIn
         element.index := device.elementIndexes[element.typ];
         inc(device.elementIndexes[element.typ]);
 
-        writeln('  type: ', element.typ);
-        writeln('  min: ', element.min);
-        writeln('  mid: ', element.mid);
-        writeln('  max: ', element.max);
+        //writeln('  type: ', element.typ);
+        //writeln('  min: ', element.min);
+        //writeln('  mid: ', element.mid);
+        //writeln('  max: ', element.max);
         device.elements.Add(element);
       end;
   end;
@@ -1342,10 +1345,6 @@ var
   element: IOHIDElementRef;
 begin
   info := HIDDeviceInfo.Create;
-
-  // TODO: move to constructor
-  info.id := HIDElementDeviceID;
-  inc(HIDElementDeviceID);
 
   ref := IOHIDDeviceGetProperty(hidDevice, CFSTR(kIOHIDPrimaryUsagePageKey));
   if assigned(ref) then
@@ -1411,9 +1410,11 @@ end;
 procedure Cocoa_GamepadWasAddedCallback(context: pointer; result_: IOKit.IOReturn; sender: pointer; device: IOHIDDeviceRef); cdecl;
 var
   info: HIDDeviceInfo;
+  params: GLPT_MessageParams;
 begin
-  // TODO: make a message
-  writeln('gamepad added');
+  FillChar(params, sizeof(params), 0);
+  glptPostMessage(nil, GLPT_MESSAGE_CONTROLLER_ADDED, params);      
+
   if Cocoa_GetHIDDeviceInfo(device, info) then
     begin
       if RegisteredHIDDevices = nil then
@@ -1425,9 +1426,11 @@ end;
 procedure Cocoa_GamepadWasRemovedCallback(context: pointer; result_: IOKit.IOReturn; sender: pointer; device: IOHIDDeviceRef); cdecl;
 var
   i: integer;
+  params: GLPT_MessageParams;
 begin
-  // TODO: make a message
-  writeln('gamepad removed');
+  FillChar(params, sizeof(params), 0);
+  glptPostMessage(nil, GLPT_MESSAGE_CONTROLLER_REMOVED, params);      
+
   for i := 0 to RegisteredHIDDevices.Count - 1 do
     if HIDDeviceInfo(RegisteredHIDDevices[i]).hidDevice = device then
       begin
@@ -1436,6 +1439,7 @@ begin
       end;
 end;
 
+{ note: keeping for testing right now }
 procedure Cocoa_GamepadActionCallback(context: pointer; result_: IOReturn; sender: pointer; value: IOHIDValueRef); cdecl;
 var
   element: IOHIDElementRef;
@@ -1541,7 +1545,8 @@ procedure Cocoa_PollDevices;
         end;
       hid_element_hat:
         begin
-          // TODO: not implemetented
+          // TODO: implement joysticks but I don't have any for testing
+          GLPTError(GLPT_ERROR_PLATFORM, 'HIDElementHat is not yet implemetented in Cocoa.');
           halt(-1);
           //hat := HIDElementHat(element);
           //if (hat.value[usage] <> value) then
@@ -1554,7 +1559,6 @@ procedure Cocoa_PollDevices;
   end;
 
 var
-  value: SInt32;
   device: HIDDeviceInfo;
   element: HIDElementInfo;
 begin
@@ -1579,13 +1583,11 @@ function Cocoa_Gamepad_Init: boolean;
 
 var
   matches: NSMutableArray;
-  res: IOReturn;
 begin
-  writeln('Cocoa_Gamepad_Init');
 
   // criteria
   matches := NSMutableArray.alloc.init;
-  matches.addObject(CreateHIDDeviceMatchDictionary(kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick));
+  //matches.addObject(CreateHIDDeviceMatchDictionary(kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick));
   matches.addObject(CreateHIDDeviceMatchDictionary(kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad));
   matches.addObject(CreateHIDDeviceMatchDictionary(kHIDPage_GenericDesktop, kHIDUsage_GD_MultiAxisController));
   
@@ -1610,7 +1612,7 @@ begin
   IOHIDManagerScheduleWithRunLoop(HIDManager, CFRunLoopGetCurrent, kCFRunLoopDefaultMode);
 
   result := true;
-  // what is this???
+  // what is this for in sdl?
   //while (CFRunLoopRunInMode(SDL_JOYSTICK_RUNLOOP_MODE,0,TRUE) == kCFRunLoopRunHandledSource) {
   //    /* no-op. Callback fires once per existing device. */
   //}
@@ -1623,6 +1625,7 @@ var
   delegate: TCocoaAppDelegate;
 begin  
 
+  // initial gamepad support
   if (GLPT_FlagGamepad in flags) and not Cocoa_Gamepad_Init then
     exit(false);
 

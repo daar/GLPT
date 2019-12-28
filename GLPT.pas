@@ -93,10 +93,11 @@ const
   GLPT_MESSAGE_DROPEXIT = 21;
   GLPT_MESSAGE_HSCROLL = 22;
   GLPT_MESSAGE_ABOUT = 23;
-  // TODO: we need added/removed events and up/down for controllers
   GLPT_MESSAGE_CONTROLLER_HAT = 24;
   GLPT_MESSAGE_CONTROLLER_AXIS = 25;
   GLPT_MESSAGE_CONTROLLER_BUTTON = 26;
+  GLPT_MESSAGE_CONTROLLER_ADDED = 27;
+  GLPT_MESSAGE_CONTROLLER_REMOVED = 28;
   GLPT_MESSAGE_USER = 50000;
   GLPT_MESSAGE_KILLME = MaxInt;
 
@@ -733,8 +734,8 @@ type
       2: (rect: GLPT_MsgParmRect);               //< rectangel event record
       3: (user: GLPT_MsgParmUser);               //< used defined event record
       4: (axis: GLPT_MsgParmControllerAxis);     //< controller (axis)
-      4: (hat: GLPT_MsgParmControllerHat);       //< controller (hat/joystick)
-      4: (button: GLPT_MsgParmControllerButton); //< controller (button)
+      5: (hat: GLPT_MsgParmControllerHat);       //< controller (hat/joystick)
+      6: (button: GLPT_MsgParmControllerButton); //< controller (button)
   end;
 
   GLPT_MessageRec = record
@@ -753,10 +754,8 @@ type
     bottom: longint;   //< bottom position of rectangle
   end;
 
-  // TODO: fix these names
-  GLPT_InitFlagsEnum = (
-                      GLPT_FlagGamepad
-                    );
+  { Flags which are passed to GLPT_Init to request specific features  }
+  GLPT_InitFlagsEnum = (GLPT_FlagGamepad);
   GLPT_InitFlags = set of GLPT_InitFlagsEnum;
 
 const
@@ -991,7 +990,7 @@ end;
 
 function calloc(size: ptruint): pointer;
 var
-  itm: pointer = nil;
+  itm: pointer;
 begin
   GetMem(itm, size);
   FillByte(itm^, size, 0);

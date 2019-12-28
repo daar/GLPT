@@ -211,38 +211,38 @@ type
   va_list_rec = OpaqueRecord;
   va_list = ^va_list_rec;
 
-{$include UndefinedTypes.inc}
-{$include iokit/UndefinedTypes.inc}
+{$include lib/IOKit/UndefinedTypes.inc}
+{$include lib/IOKit/iokit/UndefinedTypes.inc}
 
 {$define TYPES}
-{$include iokit/Sources.inc}
+{$include lib/IOKit/iokit/Sources.inc}
 {$undef TYPES}
 
 {$define RECORDS}
-{$include iokit/Sources.inc}
+{$include lib/IOKit/iokit/Sources.inc}
 {$undef RECORDS}
 
 {$define PROTOCOLS}
-{$include iokit/Sources.inc}
+{$include lib/IOKit/iokit/Sources.inc}
 {$undef PROTOCOLS}
 
 {$define CLASSES}
-{$include iokit/Sources.inc}
+{$include lib/IOKit/iokit/Sources.inc}
 {$undef CLASSES}
 
 {$define FUNCTIONS}
-{$include iokit/Sources.inc}
+{$include lib/IOKit/iokit/Sources.inc}
 {$undef FUNCTIONS}
 
 {$define EXTERNAL_SYMBOLS}
-{$include iokit/Sources.inc}
+{$include lib/IOKit/iokit/Sources.inc}
 {$undef EXTERNAL_SYMBOLS}
 
-{$include iokit/InlineFunctions.inc}
+{$include lib/IOKit/iokit/InlineFunctions.inc}
 
 {$undef INTERFACE}
 implementation
 {$define IMPLEMENTATION}
-{$include iokit/InlineFunctions.inc}
+{$include lib/IOKit/iokit/InlineFunctions.inc}
 {$undef IMPLEMENTATION}
 end.
