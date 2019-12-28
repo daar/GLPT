@@ -195,7 +195,7 @@ interface
 {$linkframework IOKit}
 
 uses
-  DefinedClassesIOKit, CTypes, MacOSAll;
+  CTypes, MacOSAll;
 
 {$define INTERFACE}
 {$define CGFLOAT_DEFINED}
