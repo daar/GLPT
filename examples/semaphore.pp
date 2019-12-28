@@ -6,6 +6,7 @@ uses
 
 var
   sem: pGLPT_Semaphore;
+  thread: pGLPT_Thread;
   value: integer = 0;
 
 procedure error_callback(error: integer; description: string);
@@ -18,16 +19,16 @@ function thread_callback (userData: pointer): integer;
 var
   i: integer;
 begin
-  for i := 0 to 10 do
+  for i := 0 to 9 do
     begin
       value += 1;
-      GLPT_Delay(25);
+      writeln(value);
+      GLPT_Delay(100);
     end;
   GLPT_SemaphorePost(sem);
+  result := 0;
 end;
 
-var
-  thread: pGLPT_Thread;
 begin
   GLPT_SetErrorCallback(@error_callback);
   if not GLPT_Init then

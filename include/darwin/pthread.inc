@@ -36,7 +36,7 @@ CONST PTHREAD_EXPLICIT_SCHED       = 0;
     ppthread_cond_t      = ^pthread_cond_t;
     ppthread_condattr_t  = ^pthread_condattr_t;
 
-    psem_t          = {^sem_t}sizeuint;
+    psem_t          = {^sem_t}SizeInt;
 
 function  pthread_getspecific      (t : pthread_key_t):pointer; cdecl; external 'c';
 function  pthread_setspecific      (t : pthread_key_t;p:pointer):cint; cdecl; external 'c';

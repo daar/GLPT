@@ -66,7 +66,7 @@ type
   GLPT_Semaphore = record
     {$IFDEF DARWIN}
     public type 
-      psem_t = sizeuint; { from ptypes.inc }
+      psem_t = SizeInt; { from ptypes.inc }
     public
       handle: psem_t;
       name: string;

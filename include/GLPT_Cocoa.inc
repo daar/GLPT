@@ -237,10 +237,10 @@ type
       function canBecomeKeyWindow: objcbool; override;
       function canBecomeMainWindow: objcbool; override;
       procedure setKeepFullScreenAlways (newValue: boolean); message 'setKeepFullScreenAlways:';
+      procedure dealloc; override;
     private
       keepFullScreenAlways: boolean;
       procedure screenParametersChanged (notification: NSNotification); message 'screenParametersChanged:';
-      procedure dealloc; override;
   end;
 
 function TBorderlessWindow.canBecomeKeyWindow: objcbool;
@@ -296,12 +296,13 @@ end;
 
 type
   TCocoaWindow = objcclass (TBorderlessWindow)
-    private
-      ref: pGLPTwindow;
+    public
       procedure close; override;
       procedure becomeKeyWindow; override;
       procedure resignKeyWindow; override;
       procedure doCommandBySelector(aSelector: SEL); override;
+    private
+      ref: pGLPTwindow;
   end;
 
 procedure TCocoaWindow.close;
@@ -320,6 +321,7 @@ var
   params: GLPT_MessageParams;
 begin
   inherited;
+  FillChar(params, sizeof(params), 0);
   glptPostMessage(ref, GLPT_MESSAGE_ACTIVATE, params);      
 end;
 
@@ -328,6 +330,7 @@ var
   params: GLPT_MessageParams;
 begin
   inherited;
+  FillChar(params, sizeof(params), 0);
   glptPostMessage(ref, GLPT_MESSAGE_DEACTIVATE, params);
 end;
 
@@ -459,6 +462,14 @@ type
     public
       function initWithFrame(frameRect: NSRect): id; override;
       function isOpaque: objcbool; override;
+      procedure viewDidMoveToWindow; override;
+      procedure mouseEntered(theEvent: NSEvent); override;
+      procedure mouseExited(theEvent: NSEvent); override;
+      procedure doCommandBySelector(aSelector: SEL); override;
+      procedure keyDown(theEvent: NSEvent); override;
+      procedure drawRect(dirtyRect: NSRect); override;
+      procedure dealloc; override;
+      procedure updateTrackingAreas; override;
     private
       openGLContext: NSOpenGLContext;
       trackingArea: NSTrackingArea;
@@ -470,17 +481,9 @@ type
       function glptContext: GLPT_Context; message 'glptContext';
 
       procedure setupContext; message 'setupContext';
-      procedure viewDidMoveToWindow; override;
-      procedure mouseEntered(theEvent: NSEvent); override;
-      procedure mouseExited(theEvent: NSEvent); override;
-      procedure doCommandBySelector(aSelector: SEL); override;
-      procedure updateTrackingAreas; override;
-      procedure keyDown(theEvent: NSEvent); override;
 
       procedure frameChanged (sender: NSNotification); message 'frameChanged:';
-      procedure drawRect(dirtyRect: NSRect); override;
       procedure reshape; message 'reshape';
-      procedure dealloc; override;
   end;
 
 // note: setValues_forParameter in RTL headers is parsed wrong
@@ -516,6 +519,7 @@ procedure TOpenGLView.mouseEntered(theEvent: NSEvent);
 var
    params: GLPT_MessageParams;
 begin
+  FillChar(params, sizeof(params), 0);
   glptPostMessage(windowRef, GLPT_MESSAGE_MOUSEENTER, params);      
 end;
 
@@ -523,6 +527,7 @@ procedure TOpenGLView.mouseExited(theEvent: NSEvent);
 var
    params: GLPT_MessageParams;
 begin
+  FillChar(params, sizeof(params), 0);
   glptPostMessage(windowRef, GLPT_MESSAGE_MOUSEEXIT, params);   
 end;
 
@@ -539,7 +544,6 @@ end;
 
 procedure TOpenGLView.setupContext;
 var
-  swapInterval: longint = 1;
   opacity: integer = 0;
   pixelFormat: NSOpenGLPixelFormat;
 begin

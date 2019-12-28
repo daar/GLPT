@@ -918,19 +918,19 @@ procedure GLPT_SetVSync(sync: boolean);
 
 // TODO: we need to include these for GLPT_Threads.inc but they polute the namespace now
 {$IFDEF DARWIN}
-{$i include/darwin/ptypes.inc}
-{$i include/darwin/pthread.inc}
-{$i include/darwin/errno.inc}
+{$INCLUDE include/darwin/ptypes.inc}
+{$INCLUDE include/darwin/pthread.inc}
+{$INCLUDE include/darwin/errno.inc}
 {$ENDIF}
 
-{$i include/GLPT_Threads.inc}
+{$INCLUDE include/GLPT_Threads.inc}
 
 implementation
 uses
   GL, GLext;
 
-{$i include/GLPT_Keyboard.inc}
-{$i include/GLPT_Controller.inc}
+{$INCLUDE include/GLPT_Keyboard.inc}
+{$INCLUDE include/GLPT_Controller.inc}
 
 type
   pLink = ^Link;
@@ -1061,13 +1061,13 @@ end;
 //***  Native functions  ***********************************************************************************************
 
 {$IFDEF MSWINDOWS}
-
+  {$INCLUDE GLPT_gdi.inc}
 {$ENDIF}
 {$IFDEF LINUX}
-  {$i include/GLPT_X11.inc}
+  {$INCLUDE include/GLPT_X11.inc}
 {$ENDIF}
 {$IFDEF DARWIN}
-  {$i include/GLPT_Cocoa.inc}
+  {$INCLUDE include/GLPT_Cocoa.inc}
 {$ENDIF}
 
 //***  Thread functions  **************************************************************************************************
