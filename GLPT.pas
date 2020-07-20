@@ -714,6 +714,12 @@ type
   end;
 
 {
+   This function loads a function from the OpenGL library.
+   @return the pointer to the OpenGL function
+}
+function GLPT_GetProcAddress(ProcName: pchar): Pointer;
+
+{
    This function returns the GLPT version as string.
    @return the GLPT version
 }
@@ -866,7 +872,35 @@ implementation
 
 uses
   SysUtils,
-  GL, GLext;
+{$IFNDEF MORPHOS}
+  dynlibs;
+{$ENDIF}
+
+var
+  LibGLHandle: PtrInt;
+
+const
+{$IFDEF WINDOWS}
+  LibGL: pchar = 'opengl32.Lib';
+{$ELSE}
+{$IFDEF OS2}
+  LibGL: pchar = 'opengl.Lib';
+{$ELSE OS2}
+{$IFDEF DARWIN}
+  LibGL: pchar = '/System/Library/Frameworks/OpenGL.framework/Libraries/libGL.dylib';
+{$ELSE}
+{$IFDEF MORPHOS}
+  InitTinyGLLibrary;
+{$ELSE}
+{$IFDEF HAIKU}
+  LibGL: pchar = 'libGL.so';
+{$ELSE}
+  LibGL: pchar = 'libGL.so.1';
+{$ENDIF HAIKU}
+{$ENDIF MORPHOS}
+{$ENDIF DARWIN}
+{$ENDIF OS2}
+{$ENDIF WINDOWS}
 
 {$i GLPT_Keyboard.inc}
 
@@ -1013,6 +1047,19 @@ end;
 {$ENDIF}
 
 //***  API functions  **************************************************************************************************
+
+function GLPT_GetProcAddress(ProcName: pchar): Pointer;
+begin
+  if LibGLHandle = 0 then
+    LibGLHandle := LoadLibrary(LibGL);
+  if LibGLHandle = 0 then
+  begin
+    writeln('Could not load ', ProcName, ' from OpenGL: ' + LibGL);
+    halt(-1);
+  end;
+
+  exit(GetProcAddress(LibGLHandle, ProcName));
+end;
 
 function GLPT_GetVersionString: string;
 var

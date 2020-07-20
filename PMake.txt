@@ -22,4 +22,4 @@ add_library('lib_GLPT',
 ], []);
 
 // create the package
-create_package('$(PMAKE_PROJECT_NAME)-$(PROJECT_VERSION)-$(PMAKE_HOST_SYSTEM_PROCESSOR)-$(PMAKE_HOST_SYSTEM_NAME)', 'package');
+create_package('$(PMAKE_PROJECT_NAME)-$(PROJECT_VERSION)-$(PMAKE_HOST_SYSTEM_PROCESSOR)-$(PMAKE_HOST_SYSTEM_NAME)');
