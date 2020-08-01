@@ -389,7 +389,7 @@ begin
           CWOverrideRedirect;
 
   win^.Xwin := XCreateWindow(win^.dpy, root, posx, posy,
-               sizex - posx, sizey - posy, 0, visinfo^.depth, InputOutput, visinfo^.visual, mask, @attr);
+               sizex, sizey, 0, visinfo^.depth, InputOutput, visinfo^.visual, mask, @attr);
 
   win^.ctx := glXCreateContext(win^.dpy, visinfo, nil, True);
 
@@ -401,8 +401,8 @@ begin
   //set hints and properties
   sizehints.x := posx;
   sizehints.y := posy;
-  sizehints.width := sizex - posx;
-  sizehints.height := sizey - posy;
+  sizehints.width := sizex;
+  sizehints.height := sizey;
   sizehints.flags := USSize or USPosition;
   XSetNormalHints(win^.dpy, win^.Xwin, @sizehints);
   XSetStandardProperties(win^.dpy, win^.Xwin, title, title,
@@ -590,8 +590,8 @@ begin
   dpy := XOpenDisplay(nil);
   screen := ScreenOfDisplay(dpy, 0);
 
-  dr.left := 0;
-  dr.right := screen^.width;
+  dr.right := 0;
+  dr.left := screen^.width;
   dr.top := 0;
   dr.bottom := screen^.height;
 
