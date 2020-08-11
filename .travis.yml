@@ -16,7 +16,8 @@ before_install:
         sudo apt-get update;
         sudo apt -q install fpc;
       else
-        choco install -y freepascal;     
+        choco install -y freepascal;   
+        cmd.exe //c "RefreshEnv.cmd & iisexpress.exe";
       fi
 
 script:
