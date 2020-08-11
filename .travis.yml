@@ -16,10 +16,7 @@ before_install:
         sudo apt-get update;
         sudo apt -q install fpc;
       else
-        wget -q ftp://ftp.freepascal.org/pub/fpc/snapshot/v30/x86_64-win64/fpc-3.0.5.x86_64-win64.zip;
-        mkdir fpc;
-        unzip -q -d fpc fpc-3.0.5.x86_64-win64.zip;
-        export PATH="$PATH":"$PWD/fpc/bin/x86_64-win64/";
+        choco install -y freepascal;     
       fi
 
 script:
