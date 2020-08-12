@@ -21,7 +21,6 @@ before_install:
       fi
 
 script:
- - fpc
  - fpc -vtu GLPT.pas 
 
 notifications:
