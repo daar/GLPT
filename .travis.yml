@@ -18,6 +18,8 @@ before_install:
       else
         choco install -y freepascal;   
         cmd.exe //c "RefreshEnv.cmd";
+        export PATH=/C/tools/freepascal/bin/i386-win32:$PATH
+        dir C:\tools\freepascal\
       fi
 
 script:
