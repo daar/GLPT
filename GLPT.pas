@@ -1363,10 +1363,10 @@ begin
   gdi_SetVSync(sync);
 {$ENDIF}
 {$IFDEF LINUX}
-  //X11_SetVSync(sync);
+  X11_SetVSync(sync);
 {$ENDIF}
 {$IFDEF DARWIN}
-  //Cocoa_SetVSync(sync);
+  Cocoa_SetVSync(sync);
 {$ENDIF}
 end;
 
