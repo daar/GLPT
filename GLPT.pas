@@ -881,10 +881,10 @@ var
 
 const
 {$IFDEF WINDOWS}
-  LibGL: pchar = 'opengl32.Lib';
+  LibGL: pchar = 'opengl32.dll';
 {$ELSE}
 {$IFDEF OS2}
-  LibGL: pchar = 'opengl.Lib';
+  LibGL: pchar = 'opengl.dll';
 {$ELSE OS2}
 {$IFDEF DARWIN}
   LibGL: pchar = '/System/Library/Frameworks/OpenGL.framework/Libraries/libGL.dylib';
