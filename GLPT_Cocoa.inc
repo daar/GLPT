@@ -881,3 +881,8 @@ begin
       end;
   end;
 end;
+
+procedure Cocoa_SetVSync(sync: boolean);
+begin
+  {$note implement this}
+end;

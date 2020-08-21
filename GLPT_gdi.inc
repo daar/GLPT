@@ -518,6 +518,19 @@ begin
   SetCursor(LoadCursor(h_Instance, g_Cursor));
 end;
 
+var
+  WGLInitialized: boolean = false;
+  // non-ARB wgl extensions
+  wglSwapIntervalEXT: function(interval : Integer) : BOOL; stdcall;
+
+procedure Load_WGL_EXT_swap_control;
+begin
+  if WGLInitialized then exit;
+    WGLInitialized := true;
+
+  Pointer(wglSwapIntervalEXT) := wglGetProcAddress('wglSwapIntervalEXT');
+end;
+
 procedure gdi_SetVSync(sync: boolean);
 begin
   Load_WGL_EXT_swap_control;

@@ -597,3 +597,8 @@ begin
 
   XCloseDisplay(dpy);
 end;
+
+procedure X11_SetVSync(sync: boolean);
+begin
+  {$note implement this}
+end;

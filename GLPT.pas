@@ -881,10 +881,10 @@ var
 
 const
 {$IFDEF WINDOWS}
-  LibGL: pchar = 'opengl32.Lib';
+  LibGL: pchar = 'opengl32.dll';
 {$ELSE}
 {$IFDEF OS2}
-  LibGL: pchar = 'opengl.Lib';
+  LibGL: pchar = 'opengl.dll';
 {$ELSE OS2}
 {$IFDEF DARWIN}
   LibGL: pchar = '/System/Library/Frameworks/OpenGL.framework/Libraries/libGL.dylib';
@@ -1363,10 +1363,10 @@ begin
   gdi_SetVSync(sync);
 {$ENDIF}
 {$IFDEF LINUX}
-  //X11_SetVSync(sync);
+  X11_SetVSync(sync);
 {$ENDIF}
 {$IFDEF DARWIN}
-  //Cocoa_SetVSync(sync);
+  Cocoa_SetVSync(sync);
 {$ENDIF}
 end;
 
