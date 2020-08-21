@@ -590,8 +590,8 @@ begin
   dpy := XOpenDisplay(nil);
   screen := ScreenOfDisplay(dpy, 0);
 
-  dr.right := 0;
-  dr.left := screen^.width;
+  dr.right := screen^.width;
+  dr.left := 0;
   dr.top := 0;
   dr.bottom := screen^.height;
 
