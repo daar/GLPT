@@ -537,7 +537,8 @@ end;
 
 procedure TOpenGLView.drawRect(dirtyRect: NSRect);
 begin 
-  openGLContext.flushBuffer;
+  // This has to be done in Cocoa_SwapBuffers, at least on macOS 12
+  // openGLContext.flushBuffer;
 end;
 
 procedure TOpenGLView.reshape;
@@ -725,6 +726,7 @@ end;
 procedure Cocoa_SwapBuffers(win: pGLPTwindow);
 begin
   win^.ref.contentView.display;
+  win^.glcontext.flushBuffer;
 end;
 
 procedure Cocoa_GetFrameBufferSize(win: pGLPTwindow; out width, height: integer);
