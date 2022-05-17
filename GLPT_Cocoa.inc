@@ -230,10 +230,10 @@ end;
 type
   TBorderlessWindow = objcclass (NSWindow)
     public
-      function initWithContentRect_styleMask_backing_defer (contentRect: NSRect; aStyle: NSUInteger; bufferingType: NSBackingStoreType; flag: boolean): id; override;
+      function initWithContentRect_styleMask_backing_defer (contentRect: NSRect; aStyle: NSUInteger; bufferingType: NSBackingStoreType; flag: ObjCBool): id; override;
       function initWithContentRect(contentRect: NSRect): id; message 'initWithContentRect:';
-      function canBecomeKeyWindow: boolean; override;
-      function canBecomeMainWindow: boolean; override;
+      function canBecomeKeyWindow: ObjCBool; override;
+      function canBecomeMainWindow: ObjCBool; override;
       procedure setKeepFullScreenAlways (newValue: boolean); message 'setKeepFullScreenAlways:';
     private
       keepFullScreenAlways: boolean;
@@ -241,12 +241,12 @@ type
       procedure dealloc; override;
   end;
 
-function TBorderlessWindow.canBecomeKeyWindow: boolean;
+function TBorderlessWindow.canBecomeKeyWindow: ObjCBool;
 begin
   result := true;
 end;
 
-function TBorderlessWindow.canBecomeMainWindow: boolean;
+function TBorderlessWindow.canBecomeMainWindow: ObjCBool;
 begin
   result := true;
 end;
@@ -271,7 +271,7 @@ begin
   inherited dealloc;
 end;
 
-function TBorderlessWindow.initWithContentRect_styleMask_backing_defer (contentRect: NSRect; aStyle: NSUInteger; bufferingType: NSBackingStoreType; flag: boolean): id;
+function TBorderlessWindow.initWithContentRect_styleMask_backing_defer (contentRect: NSRect; aStyle: NSUInteger; bufferingType: NSBackingStoreType; flag: ObjCBool): id;
 begin
   result := inherited initWithContentRect_styleMask_backing_defer(contentRect, aStyle, bufferingType, flag);
   if result <> nil then
@@ -442,7 +442,7 @@ type
   TOpenGLView = objcclass (NSView)
     public
       function initWithFrame(frameRect: NSRect): id; override;
-      function isOpaque: Boolean; override;
+      function isOpaque: ObjCBool; override;
     private
       openGLContext: NSOpenGLContext;
       trackingArea: NSTrackingArea;
@@ -537,7 +537,8 @@ end;
 
 procedure TOpenGLView.drawRect(dirtyRect: NSRect);
 begin 
-  openGLContext.flushBuffer;
+  // This has to be done in Cocoa_SwapBuffers, at least on macOS 12
+  // openGLContext.flushBuffer;
 end;
 
 procedure TOpenGLView.reshape;
@@ -556,7 +557,7 @@ begin
     end;
 end;
 
-function TOpenGLView.isOpaque: Boolean;
+function TOpenGLView.isOpaque: ObjCBool;
 begin
   // return false to make the view transparent
   result := window.backgroundColor.alphaComponent > 0;
@@ -725,6 +726,7 @@ end;
 procedure Cocoa_SwapBuffers(win: pGLPTwindow);
 begin
   win^.ref.contentView.display;
+  win^.glcontext.flushBuffer;
 end;
 
 procedure Cocoa_GetFrameBufferSize(win: pGLPTwindow; out width, height: integer);
