@@ -575,7 +575,7 @@ const
   NSOpenGLProfileVersion3_2Core = $3200 { available in 10_7 };
   NSOpenGLProfileVersion4_1Core = $4100 { available in 10_10 };
 var
-  attributes: array[0..4] of NSOpenGLPixelFormatAttribute;
+  attributes: array[0..32] of NSOpenGLPixelFormatAttribute;
   i: integer = -1;
   context: GLPT_Context;
 begin
