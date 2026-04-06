@@ -1,0 +1,12 @@
+{
+  "name" : "daar/GLPT",
+  "license" : "MIT",
+  "description" : "Lightweight OpenGL Pascal Toolkit",
+  "type" : "library",
+  "authors" : [
+    {
+      "name" : "Darius Blaszyk",
+      "email" : "dhkblaszyk@gmail.com"
+    }
+  ]
+}
